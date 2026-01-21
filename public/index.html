@@ -9,6 +9,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Authentication Script -->
+    <script src="/auth-utils.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -123,29 +127,28 @@
             border-top: 1px solid #e2e8f0;
         }
 
-        .upgrade-card {
+        .logout-card {
             background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
             border-radius: 12px;
             padding: 16px;
             color: white;
         }
 
-        .upgrade-card h4 {
+        .logout-card h4 {
             font-size: 13px;
             font-weight: 600;
             margin-bottom: 6px;
         }
 
-        .upgrade-card p {
+        .logout-card p {
             font-size: 11px;
             opacity: 0.9;
             margin-bottom: 12px;
             line-height: 1.4;
         }
 
-        .upgrade-btn {
-            background: white;
-            color: #f59e0b;
+        .logout-btn {
+            color: white;
             border: none;
             padding: 8px 16px;
             border-radius: 6px;
@@ -156,7 +159,7 @@
             transition: transform 0.2s;
         }
 
-        .upgrade-btn:hover {
+        .logout-btn:hover {
             transform: scale(1.02);
         }
 
@@ -898,6 +901,17 @@
             font-size: 11px;
             color: #94a3b8;
         }
+
+        /* Logout button hover effect */
+        .logout-btn:hover {
+            background: #fee2e2 !important;
+            color: #dc2626 !important;
+        }
+
+        .logout-btn:hover img {
+            opacity: 1 !important;
+            filter: brightness(0) saturate(100%) invert(24%) sepia(97%) saturate(3447%) hue-rotate(347deg) brightness(91%) contrast(92%);
+        }
     </style>
 </head>
 <body>
@@ -909,6 +923,9 @@
             </div>
             <h2>Analytics Hub</h2>
         </div>
+
+        <!-- User Profile Container (populated by auth-utils.js) -->
+        <div id="user-profile-container" style="padding: 12px 20px;"></div>
 
         <nav class="nav-menu">
             <div class="nav-section">
@@ -939,6 +956,13 @@
                 </div>
             </div>
         </nav>
+
+        <!-- Logout Button -->
+        <div class="logout-card" style="padding: 12px 20px; border-top: 1px solid #e2e8f0; margin-top: auto;">
+            <div class="logout-btn" onclick="authManager.logout()" style="padding: 12px; cursor: pointer; transition: all 0.2s ease; border-radius: 8px; display: flex; align-items: center; gap: 12px; color: #64748b; font-weight: 500; font-size: 14px;">
+                <img width="24" height="24" src="https://img.icons8.com/fluency-systems-regular/48/exit--v1.png" alt="logout" style="opacity: 0.7;"/>
+                <span>Logout</span>
+            </div>
         </div>
     </div>
 

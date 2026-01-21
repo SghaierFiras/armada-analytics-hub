@@ -2,6 +2,14 @@
 
 A comprehensive analytics platform for monitoring and analyzing delivery operations, merchant performance, and ordering behaviors across Kuwait.
 
+## 🔒 Authentication & Security
+
+This platform now includes **Slack OAuth authentication** with optional domain restriction to ensure only authorized users can access your private company data.
+
+**Quick Start:** See [QUICKSTART.md](QUICKSTART.md) for 3-step setup guide.
+
+**Full Documentation:** See [AUTHENTICATION_SETUP.md](AUTHENTICATION_SETUP.md) for detailed configuration.
+
 ## Overview
 
 This project provides interactive dashboards and data analysis tools to gain insights into:
@@ -15,8 +23,11 @@ This project provides interactive dashboards and data analysis tools to gain ins
 
 ```
 Armada/
-├── public/              # Web dashboards (Netlify deployment)
+├── public/              # Web dashboards (protected by authentication)
 │   ├── index.html       # Main Analytics Hub
+│   ├── login.html       # Slack OAuth login page
+│   ├── auth-utils.js    # Client-side auth utility
+│   ├── example-dashboard-integration.html  # Integration example
 │   ├── MERCHANT_ANALYTICS_DASHBOARD.html
 │   ├── ORDERS_DELIVERY_DASHBOARD.html
 │   ├── PERFORMANCE_CHARTS.html
@@ -45,10 +56,14 @@ Armada/
 │   └── kuwait_ordering_with_avg_amounts_2025.csv
 ├── assets/              # Images and static assets
 │   └── armada logo.png
+├── auth-server.js       # Express authentication server
 ├── .env                 # Environment variables (not committed)
+├── .env.example         # Environment template
 ├── .gitignore
 ├── package.json
-└── server.py            # Local development server
+├── server.py            # Legacy local development server
+├── QUICKSTART.md        # Quick start guide (3 steps)
+└── AUTHENTICATION_SETUP.md  # Complete setup documentation
 
 ```
 
@@ -57,8 +72,8 @@ Armada/
 ### Prerequisites
 
 - Node.js (v14 or higher)
-- MongoDB connection (for data analysis scripts)
-- Python 3 (for local server)
+- MongoDB connection (for data analysis scripts and user sessions)
+- Slack workspace with admin access (for OAuth setup)
 
 ### Installation
 
@@ -73,22 +88,46 @@ cd Armada
 npm install
 ```
 
-3. Configure environment variables:
-Create a `.env` file in the root directory with your MongoDB connection string:
-```
-MONGODB_URI=your_mongodb_connection_string
-```
+3. Set up Slack OAuth:
+   - Go to <https://api.slack.com/apps>
+   - Create a new app for your workspace
+   - Configure OAuth redirect URL
+   - Copy Client ID and Client Secret
+   - See [QUICKSTART.md](QUICKSTART.md) for detailed steps
+
+4. Configure environment variables:
+
+   Copy `.env.example` to `.env` and fill in your credentials:
+
+   ```bash
+   cp .env.example .env
+   # Edit .env with your Slack credentials and MongoDB URI
+   ```
 
 ### Running Locally
 
-#### View Dashboards
+### With Authentication (Recommended)
 
-Start the local Python server:
+Start the authentication server:
+
+```bash
+npm start
+```
+
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
+
+You'll be prompted to log in with Slack before accessing the dashboards.
+
+### Without Authentication (Development Only)
+
+Start the legacy Python server:
 ```bash
 python3 server.py
 ```
 
 Then open [http://localhost:8000](http://localhost:8000) in your browser.
+
+**Note:** This bypasses authentication and should only be used for development.
 
 #### Run Analysis Scripts
 

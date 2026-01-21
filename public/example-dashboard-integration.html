@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Example Dashboard with Auth - Armada Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- STEP 1: Include the auth-utils.js script -->
+    <script src="/auth-utils.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100vh;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .logo-section {
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        /* STEP 2: Create a container for user profile */
+        #user-profile-container {
+            margin-bottom: 20px;
+        }
+
+        .nav-section {
+            margin-bottom: 24px;
+        }
+
+        .nav-item {
+            padding: 10px 12px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #64748b;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .nav-item:hover {
+            background: #f1f5f9;
+            color: #1e40af;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 40px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo-section">
+            <div class="logo">📊</div>
+            <h2>Analytics Hub</h2>
+        </div>
+
+        <!-- STEP 2: User profile container (will be populated by auth-utils.js) -->
+        <div id="user-profile-container"></div>
+
+        <div class="nav-section">
+            <div class="nav-item" onclick="window.location.href='/'">
+                <span>🏠</span> Dashboard
+            </div>
+            <div class="nav-item" onclick="window.location.href='/ORDERS_DELIVERY_DASHBOARD.html'">
+                <span>📦</span> Orders & Delivery
+            </div>
+            <div class="nav-item" onclick="window.location.href='/MERCHANT_ANALYTICS_DASHBOARD.html'">
+                <span>🏪</span> Merchants
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="page-header">
+            <h1>Authentication Integration Example</h1>
+            <p>This page demonstrates how to integrate authentication into your dashboard pages.</p>
+        </div>
+
+        <div class="card">
+            <h3>Step 1: Include the Auth Script</h3>
+            <p style="margin-bottom: 12px;">Add this script tag to the head of your HTML file:</p>
+            <div class="code-block">&lt;script src="/auth-utils.js"&gt;&lt;/script&gt;</div>
+        </div>
+
+        <div class="card">
+            <h3>Step 2: Add User Profile Container</h3>
+            <p style="margin-bottom: 12px;">Add this div where you want the user profile to appear (usually in the sidebar):</p>
+            <div class="code-block">&lt;div id="user-profile-container"&gt;&lt;/div&gt;</div>
+        </div>
+
+        <div class="card">
+            <h3>Step 3: That's It!</h3>
+            <p style="margin-bottom: 12px;">
+                The auth-utils.js script will automatically:
+            </p>
+            <ul style="margin-left: 20px; line-height: 1.8;">
+                <li>Check if the user is authenticated when the page loads</li>
+                <li>Redirect to login page if not authenticated</li>
+                <li>Display user profile with avatar, name, and email</li>
+                <li>Add a logout button</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3>Advanced: Custom JavaScript Access</h3>
+            <p style="margin-bottom: 12px;">
+                You can also access user information programmatically:
+            </p>
+            <div class="code-block">
+// Get current user info
+console.log(authManager.user);
+// { name: "John Doe", email: "john@armadadelivery.com", avatar: "..." }
+
+// Check if authenticated
+console.log(authManager.authenticated);
+// true or false
+
+// Logout programmatically
+authManager.logout();
+
+// Get full user details
+const userInfo = await authManager.getUserInfo();
+console.log(userInfo);
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Current User Information</h3>
+            <div id="user-info" style="margin-top: 12px; padding: 16px; background: #f8fafc; border-radius: 8px; font-family: monospace;">
+                Loading user information...
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 3: Optional - Custom JavaScript to use auth info -->
+    <script>
+        // Wait for auth to initialize
+        window.addEventListener('load', async () => {
+            // Wait a bit for auth to complete
+            setTimeout(async () => {
+                if (authManager.authenticated) {
+                    const userInfo = await authManager.getUserInfo();
+
+                    document.getElementById('user-info').innerHTML = `
+                        <strong>Name:</strong> ${userInfo.name}<br>
+                        <strong>Email:</strong> ${userInfo.email}<br>
+                        <strong>Team:</strong> ${userInfo.team || 'N/A'}<br>
+                        <strong>Last Login:</strong> ${new Date(userInfo.lastLogin).toLocaleString()}
+                    `;
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
