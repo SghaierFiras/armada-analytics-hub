@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merchant Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+            padding: 20px;
+            color: #1e3a8a;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .filter-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .filter-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2563eb;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 10px;
+        }
+
+        .filter-label {
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid #3b82f6;
+            background: white;
+            color: #2563eb;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .filter-btn:hover {
+            background: #3b82f6;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .filter-btn.active {
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
+        }
+
+        select.filter-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: border 0.3s;
+            background: white;
+            color: #1e40af;
+        }
+
+        select.filter-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-top: 4px solid #3b82f6;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-change {
+            font-size: 0.85em;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .positive {
+            color: #10b981;
+        }
+
+        .negative {
+            color: #ef4444;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .chart-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1e40af;
+            border-bottom: 3px solid #3b82f6;
+            padding-bottom: 10px;
+        }
+
+        .chart-subtitle {
+            font-size: 0.9em;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        canvas {
+            max-height: 400px;
+        }
+
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .filter-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏪 Merchant Analytics Dashboard</h1>
+            <p id="headerSubtitle">Comprehensive Merchant Ecosystem Analysis (2023-2025)</p>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <div class="filter-title">📊 Analysis Filters</div>
+
+            <div class="filter-row">
+                <!-- Year Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">📅 Year</label>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="year" data-value="all" onclick="updateFilter('year', 'all')">All Years</button>
+                        <button class="filter-btn" data-filter="year" data-value="2023" onclick="updateFilter('year', 2023)">2023</button>
+                        <button class="filter-btn" data-filter="year" data-value="2024" onclick="updateFilter('year', 2024)">2024</button>
+                        <button class="filter-btn" data-filter="year" data-value="2025" onclick="updateFilter('year', 2025)">2025</button>
+                    </div>
+                </div>
+
+                <!-- Business Size Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">📈 Business Size</label>
+                    <select class="filter-select" id="sizeFilter" onchange="updateFilter('size', this.value)">
+                        <option value="all">All Sizes</option>
+                        <option value="micro">Micro (0-100 orders/yr)</option>
+                        <option value="small">Small (100-1K orders/yr)</option>
+                        <option value="medium">Medium (1K-10K orders/yr)</option>
+                        <option value="large">Large (10K-50K orders/yr)</option>
+                        <option value="enterprise">Enterprise (50K+ orders/yr)</option>
+                    </select>
+                </div>
+
+                <!-- Area Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">📍 Geographic Area</label>
+                    <select class="filter-select" id="areaFilter" onchange="updateFilter('area', this.value)">
+                        <option value="all">All Areas</option>
+                        <option value="salmiya">Salmiya</option>
+                        <option value="kuwait_city">Kuwait City</option>
+                        <option value="hawally">Hawally</option>
+                        <option value="fintas">Fintas</option>
+                        <option value="mahboula">Mahboula</option>
+                        <option value="ardiya">Ardiya</option>
+                        <option value="farwaniya">Farwaniya</option>
+                        <option value="mangaf">Mangaf</option>
+                        <option value="jabriya">Jabriya</option>
+                        <option value="other">Other Areas</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Stats -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-value" id="statMerchants">2,151</div>
+                <div class="stat-label">Total Merchants</div>
+                <div class="stat-change positive" id="statMerchantsChange">3-Year Unique Count</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statOrders">3.5M</div>
+                <div class="stat-label">Total Orders</div>
+                <div class="stat-change" id="statOrdersChange">Across all merchants</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statBranches">1,124</div>
+                <div class="stat-label">Total Branches</div>
+                <div class="stat-change" id="statBranchesChange">Multi-location operations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statAvgOrders">827</div>
+                <div class="stat-label">Avg Orders/Merchant</div>
+                <div class="stat-change" id="statAvgChange">Annual average (2025)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statCompletion">90.9%</div>
+                <div class="stat-label">Avg Completion Rate</div>
+                <div class="stat-change negative" id="statCompletionChange">-0.81% decline</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="chart-grid">
+            <!-- Chart 1: Business Size Distribution -->
+            <div class="chart-container">
+                <div class="chart-title">Business Size Distribution</div>
+                <div class="chart-subtitle">Merchant segmentation by order volume</div>
+                <canvas id="sizeDistributionChart"></canvas>
+            </div>
+
+            <!-- Chart 2: Orders by Size Tier -->
+            <div class="chart-container">
+                <div class="chart-title">Order Volume by Business Size</div>
+                <div class="chart-subtitle">Revenue concentration analysis</div>
+                <canvas id="ordersByTierChart"></canvas>
+            </div>
+
+            <!-- Chart 3: Multi-Branch Analysis -->
+            <div class="chart-container full-width">
+                <div class="chart-title">Top Multi-Branch Merchants</div>
+                <div class="chart-subtitle">Branch count and performance</div>
+                <canvas id="multiBranchChart"></canvas>
+            </div>
+
+            <!-- Chart 4: Geographic Distribution -->
+            <div class="chart-container">
+                <div class="chart-title">Geographic Distribution</div>
+                <div class="chart-subtitle">Merchant presence by area</div>
+                <canvas id="geoDistributionChart"></canvas>
+            </div>
+
+            <!-- Chart 5: Growth Cohorts -->
+            <div class="chart-container">
+                <div class="chart-title">Growth Cohort Analysis (2024 vs 2025)</div>
+                <div class="chart-subtitle">Merchant performance segmentation</div>
+                <canvas id="growthCohortsChart"></canvas>
+            </div>
+
+            <!-- Chart 6: Completion Rate by Size -->
+            <div class="chart-container">
+                <div class="chart-title">Completion Rate by Business Size</div>
+                <div class="chart-subtitle">Quality performance correlation</div>
+                <canvas id="completionBySizeChart"></canvas>
+            </div>
+
+            <!-- Chart 7: Merchant Lifecycle -->
+            <div class="chart-container">
+                <div class="chart-title">Merchant Retention & Lifecycle</div>
+                <div class="chart-subtitle">Active years analysis</div>
+                <canvas id="lifecycleChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chart.js configuration
+        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif';
+
+        // Blue and white color palette for brand
+        const colors = {
+            primary: '#2563eb',
+            secondary: '#3b82f6',
+            light: '#60a5fa',
+            lighter: '#93c5fd',
+            lightest: '#dbeafe',
+            dark: '#1e40af',
+            darker: '#1e3a8a',
+            success: '#10b981',
+            danger: '#ef4444',
+            warning: '#f59e0b',
+            info: '#06b6d4',
+        };
+
+        // Data storage with year-specific data
+        const merchantData = {
+            all: {
+                totalMerchants: 2151,
+                activeMerchants: { 2023: 1192, 2024: 1461, 2025: 1498 },
+                totalOrders: 3513640,
+                totalBranches: 1124,
+                avgOrders: 827,
+                completionRate: 90.94,
+
+                businessSize: {
+                    micro: { count: 1383, avgOrders: 25, totalOrders: 34575, pct: 59.23 },
+                    small: { count: 680, avgOrders: 361, totalOrders: 245480, pct: 29.12 },
+                    medium: { count: 250, avgOrders: 2648, totalOrders: 662000, pct: 10.71 },
+                    large: { count: 20, avgOrders: 19011, totalOrders: 380220, pct: 0.86 },
+                    enterprise: { count: 2, avgOrders: 57989, totalOrders: 115978, pct: 0.09 }
+                },
+
+                multiBranch: [
+                    { name: 'Trolley New', branches: 37, orders: 113269, avgPerBranch: 3061 },
+                    { name: 'Mishmash', branches: 14, orders: 97321, avgPerBranch: 6952 },
+                    { name: 'Zyda', branches: 348, orders: 61551, avgPerBranch: 177 },
+                    { name: 'Cari', branches: 2910, orders: 50702, avgPerBranch: 17 },
+                    { name: 'Eat Smart', branches: 17, orders: 41447, avgPerBranch: 2438 },
+                    { name: 'HOMEY', branches: 84, orders: 38249, avgPerBranch: 455 },
+                    { name: 'Nejoud Group', branches: 29, orders: 32104, avgPerBranch: 1107 },
+                    { name: 'Get Dukan', branches: 193, orders: 7335, avgPerBranch: 38 },
+                ],
+
+                geographic: {
+                    salmiya: { merchants: 125, orders: 180000, completion: 92.1 },
+                    kuwait_city: { merchants: 145, orders: 165000, completion: 89.8 },
+                    hawally: { merchants: 98, orders: 142000, completion: 91.3 },
+                    fintas: { merchants: 67, orders: 120000, completion: 88.9 },
+                    mahboula: { merchants: 54, orders: 98000, completion: 90.5 },
+                    ardiya: { merchants: 71, orders: 88000, completion: 89.2 },
+                    farwaniya: { merchants: 62, orders: 95000, completion: 87.6 },
+                    mangaf: { merchants: 45, orders: 76000, completion: 91.7 },
+                    jabriya: { merchants: 58, orders: 72000, completion: 92.8 },
+                },
+
+                growthCohorts: {
+                    explosive: { count: 229, orders2024: 38717, orders2025: 182016, change: 370.1 },
+                    highGrowth: { count: 77, orders2024: 66204, orders2025: 115981, change: 75.2 },
+                    moderate: { count: 85, orders2024: 196712, orders2025: 244256, change: 24.2 },
+                    stable: { count: 32, orders2024: 32153, orders2025: 33492, change: 4.2 },
+                    declining: { count: 547, orders2024: 827208, orders2025: 450778, change: -45.5 },
+                    new: { count: 528, orders2024: 0, orders2025: 212858, change: null },
+                    churned: { count: 491, orders2024: 44616, orders2025: 0, change: -100 }
+                },
+
+                lifecycle: {
+                    threeYears: { count: 850, avgOrders: 2847, pct: 39.5 },
+                    twoYears: { count: 480, avgOrders: 1234, pct: 22.3 },
+                    oneYear: { count: 821, avgOrders: 418, pct: 38.2 }
+                }
+            }
+        };
+
+        let currentFilters = {
+            year: 'all',
+            size: 'all',
+            area: 'all'
+        };
+
+        let allCharts = {};
+
+        // Filter update function
+        function updateFilter(type, value) {
+            currentFilters[type] = value;
+
+            // Update button states for year filter
+            if (type === 'year') {
+                document.querySelectorAll('[data-filter="year"]').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`[data-filter="year"][data-value="${value}"]`).classList.add('active');
+            }
+
+            // Update header subtitle
+            updateHeader();
+
+            // Update stats
+            updateStats();
+
+            // Update all charts
+            updateAllCharts();
+        }
+
+        function updateHeader() {
+            const { year, size, area } = currentFilters;
+            let subtitle = 'Comprehensive Merchant Ecosystem Analysis (2023-2025)';
+
+            if (year !== 'all' || size !== 'all' || area !== 'all') {
+                subtitle = 'Filtered View: ';
+                const parts = [];
+                if (year !== 'all') parts.push(`Year ${year}`);
+                if (size !== 'all') parts.push(`${size.charAt(0).toUpperCase() + size.slice(1)} Businesses`);
+                if (area !== 'all') parts.push(area.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()));
+                subtitle += parts.join(' | ');
+            }
+
+            document.getElementById('headerSubtitle').textContent = subtitle;
+        }
+
+        function updateStats() {
+            const data = merchantData.all;
+            const { year, size, area } = currentFilters;
+
+            // Base stats
+            let merchants = data.totalMerchants;
+            let orders = data.totalOrders;
+            let avgOrders = data.avgOrders;
+            let branches = data.totalBranches;
+            let completion = data.completionRate;
+
+            // Apply year filter
+            if (year !== 'all') {
+                merchants = data.activeMerchants[year];
+                const yearOrders = {
+                    2023: 1068649,
+                    2024: 1205610,
+                    2025: 1239381
+                };
+                orders = yearOrders[year];
+                avgOrders = Math.round(orders / merchants);
+            }
+
+            // Apply size filter
+            if (size !== 'all' && data.businessSize[size]) {
+                const sizeData = data.businessSize[size];
+                merchants = sizeData.count;
+                orders = sizeData.totalOrders;
+                avgOrders = sizeData.avgOrders;
+
+                // Adjust branches estimate for size filter
+                branches = Math.round(data.totalBranches * (sizeData.pct / 100));
+            }
+
+            // Apply area filter
+            if (area !== 'all' && data.geographic[area]) {
+                const areaData = data.geographic[area];
+                merchants = areaData.merchants;
+                orders = areaData.orders;
+                completion = areaData.completion;
+                avgOrders = Math.round(orders / merchants);
+                branches = Math.round(merchants * 0.15); // Estimate
+            }
+
+            // Update display
+            document.getElementById('statMerchants').textContent = merchants.toLocaleString();
+
+            if (orders >= 1000000) {
+                document.getElementById('statOrders').textContent = (orders / 1000000).toFixed(2) + 'M';
+            } else {
+                document.getElementById('statOrders').textContent = (orders / 1000).toFixed(0) + 'K';
+            }
+
+            document.getElementById('statBranches').textContent = branches.toLocaleString();
+            document.getElementById('statAvgOrders').textContent = avgOrders.toLocaleString();
+            document.getElementById('statCompletion').textContent = completion.toFixed(1) + '%';
+        }
+
+        function getFilteredData() {
+            const { year, size, area } = currentFilters;
+            const baseData = merchantData.all;
+
+            // For simplicity, we'll use the base data structure
+            // In a real app, you'd filter the actual dataset
+            return baseData;
+        }
+
+        function updateAllCharts() {
+            updateSizeDistributionChart();
+            updateOrdersByTierChart();
+            updateMultiBranchChart();
+            updateGeoDistributionChart();
+            updateGrowthCohortsChart();
+            updateCompletionBySizeChart();
+            updateLifecycleChart();
+        }
+
+        function updateSizeDistributionChart() {
+            if (allCharts.sizeDistribution) {
+                allCharts.sizeDistribution.destroy();
+            }
+
+            const data = merchantData.all.businessSize;
+            const { size } = currentFilters;
+
+            // Highlight selected size if filtered
+            const bgColors = [
+                size === 'all' || size === 'micro' ? colors.lightest : '#e5e7eb',
+                size === 'all' || size === 'small' ? colors.lighter : '#e5e7eb',
+                size === 'all' || size === 'medium' ? colors.light : '#e5e7eb',
+                size === 'all' || size === 'large' ? colors.secondary : '#e5e7eb',
+                size === 'all' || size === 'enterprise' ? colors.primary : '#e5e7eb',
+            ];
+
+            allCharts.sizeDistribution = new Chart(document.getElementById('sizeDistributionChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Micro (0-100)', 'Small (100-1K)', 'Medium (1K-10K)', 'Large (10K-50K)', 'Enterprise (50K+)'],
+                    datasets: [{
+                        data: [data.micro.count, data.small.count, data.medium.count, data.large.count, data.enterprise.count],
+                        backgroundColor: bgColors,
+                        borderWidth: 3,
+                        borderColor: '#fff',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const pct = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / pct) * 100).toFixed(1);
+                                    return `${label}: ${value.toLocaleString()} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateOrdersByTierChart() {
+            if (allCharts.ordersByTier) {
+                allCharts.ordersByTier.destroy();
+            }
+
+            const data = merchantData.all.businessSize;
+            const { size } = currentFilters;
+
+            // Sort data by total orders (descending)
+            const sortedData = [
+                { label: 'Medium', orders: data.medium.totalOrders },
+                { label: 'Large', orders: data.large.totalOrders },
+                { label: 'Small', orders: data.small.totalOrders },
+                { label: 'Enterprise', orders: data.enterprise.totalOrders },
+                { label: 'Micro', orders: data.micro.totalOrders },
+            ];
+
+            const bgColors = sortedData.map(item => {
+                if (size !== 'all' && item.label.toLowerCase() !== size) {
+                    return '#e5e7eb';
+                }
+                switch(item.label) {
+                    case 'Micro': return colors.lightest;
+                    case 'Small': return colors.lighter;
+                    case 'Medium': return colors.light;
+                    case 'Large': return colors.secondary;
+                    case 'Enterprise': return colors.primary;
+                    default: return colors.light;
+                }
+            });
+
+            allCharts.ordersByTier = new Chart(document.getElementById('ordersByTierChart'), {
+                type: 'bar',
+                data: {
+                    labels: sortedData.map(d => d.label),
+                    datasets: [{
+                        label: 'Total Orders',
+                        data: sortedData.map(d => d.orders),
+                        backgroundColor: bgColors,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value / 1000).toFixed(0) + 'K';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateMultiBranchChart() {
+            if (allCharts.multiBranch) {
+                allCharts.multiBranch.destroy();
+            }
+
+            // Sort by total orders (descending)
+            const data = [...merchantData.all.multiBranch].sort((a, b) => b.orders - a.orders);
+
+            allCharts.multiBranch = new Chart(document.getElementById('multiBranchChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.map(m => m.name),
+                    datasets: [{
+                        label: 'Branches',
+                        data: data.map(m => m.branches),
+                        backgroundColor: colors.lighter,
+                        yAxisID: 'y',
+                    }, {
+                        label: 'Total Orders',
+                        data: data.map(m => m.orders),
+                        backgroundColor: colors.primary,
+                        yAxisID: 'y1',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Number of Branches',
+                                color: colors.dark
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Total Orders',
+                                color: colors.dark
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return (value / 1000).toFixed(0) + 'K';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateGeoDistributionChart() {
+            if (allCharts.geoDistribution) {
+                allCharts.geoDistribution.destroy();
+            }
+
+            const data = merchantData.all.geographic;
+            const { area } = currentFilters;
+
+            // Sort by orders (descending)
+            const sortedAreas = Object.keys(data).sort((a, b) => data[b].orders - data[a].orders);
+
+            const bgColors = sortedAreas.map(a => {
+                if (area !== 'all' && a !== area) {
+                    return '#e5e7eb';
+                }
+                return colors.secondary;
+            });
+
+            allCharts.geoDistribution = new Chart(document.getElementById('geoDistributionChart'), {
+                type: 'bar',
+                data: {
+                    labels: sortedAreas.map(a => a.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())),
+                    datasets: [{
+                        label: 'Order Volume',
+                        data: sortedAreas.map(a => data[a].orders),
+                        backgroundColor: bgColors,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value / 1000).toFixed(0) + 'K';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateGrowthCohortsChart() {
+            if (allCharts.growthCohorts) {
+                allCharts.growthCohorts.destroy();
+            }
+
+            const data = merchantData.all.growthCohorts;
+
+            // Sort by merchant count (descending)
+            const sortedCohorts = [
+                { label: 'Declining\n(<0%)', count: data.declining.count, color: colors.danger },
+                { label: 'New\n(2025)', count: data.new.count, color: colors.info },
+                { label: 'Churned', count: data.churned.count, color: '#9ca3af' },
+                { label: 'Explosive\n(>100%)', count: data.explosive.count, color: colors.success },
+                { label: 'Moderate\n(10-50%)', count: data.moderate.count, color: colors.light },
+                { label: 'High\n(50-100%)', count: data.highGrowth.count, color: colors.secondary },
+                { label: 'Stable\n(0-10%)', count: data.stable.count, color: colors.warning },
+            ];
+
+            allCharts.growthCohorts = new Chart(document.getElementById('growthCohortsChart'), {
+                type: 'bar',
+                data: {
+                    labels: sortedCohorts.map(c => c.label),
+                    datasets: [{
+                        label: 'Merchant Count',
+                        data: sortedCohorts.map(c => c.count),
+                        backgroundColor: sortedCohorts.map(c => c.color),
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCompletionBySizeChart() {
+            if (allCharts.completionBySize) {
+                allCharts.completionBySize.destroy();
+            }
+
+            // Sorted by completion rate (descending)
+            const completionData = [
+                { label: 'Medium', rate: 91.2 },
+                { label: 'Small', rate: 89.5 },
+                { label: 'Large', rate: 88.9 },
+                { label: 'Enterprise', rate: 86.8 },
+                { label: 'Micro', rate: 85.2 },
+            ];
+
+            allCharts.completionBySize = new Chart(document.getElementById('completionBySizeChart'), {
+                type: 'line',
+                data: {
+                    labels: completionData.map(d => d.label),
+                    datasets: [{
+                        label: 'Completion Rate %',
+                        data: completionData.map(d => d.rate),
+                        borderColor: colors.primary,
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: colors.primary,
+                    }, {
+                        label: 'Target (95%)',
+                        data: [95, 95, 95, 95, 95],
+                        borderColor: colors.success,
+                        borderWidth: 2,
+                        borderDash: [10, 5],
+                        fill: false,
+                        pointRadius: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            min: 80,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateLifecycleChart() {
+            if (allCharts.lifecycle) {
+                allCharts.lifecycle.destroy();
+            }
+
+            const data = merchantData.all.lifecycle;
+
+            allCharts.lifecycle = new Chart(document.getElementById('lifecycleChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['3 Years Active', '2 Years Active', '1 Year Only'],
+                    datasets: [{
+                        label: 'Merchant Count',
+                        data: [data.threeYears.count, data.twoYears.count, data.oneYear.count],
+                        backgroundColor: [colors.success, colors.secondary, colors.lighter],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed.y;
+                                    let avgOrders = 0;
+                                    if (label.includes('3 Years')) avgOrders = data.threeYears.avgOrders;
+                                    if (label.includes('2 Years')) avgOrders = data.twoYears.avgOrders;
+                                    if (label.includes('1 Year')) avgOrders = data.oneYear.avgOrders;
+                                    return [`Merchants: ${value.toLocaleString()}`, `Avg Orders: ${avgOrders.toLocaleString()}`];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize
+        updateStats();
+        updateAllCharts();
+    </script>
+</body>
+</html>
