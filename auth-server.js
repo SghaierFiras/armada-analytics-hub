@@ -228,11 +228,11 @@ async function startServer() {
         res.status(500).json({ error: 'Internal server error' });
     });
 
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
         console.log('='.repeat(60));
         console.log('🚀 Armada Analytics Hub - Authentication Server');
         console.log('='.repeat(60));
-        console.log(`\n📊 Server running at: http://localhost:${PORT}`);
+        console.log(`\n📊 Server running at: http://0.0.0.0:${PORT}`);
         console.log(`🔒 Login page: http://localhost:${PORT}/login`);
         console.log(`\n🔐 Slack OAuth Status: ${process.env.SLACK_CLIENT_ID ? '✅ Configured' : '❌ Not configured'}`);
         console.log(`🌐 Domain Restriction: ${process.env.RESTRICT_DOMAIN === 'true' ? `✅ Enabled (@${process.env.ALLOWED_DOMAIN})` : '❌ Disabled'}`);
