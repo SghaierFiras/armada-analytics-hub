@@ -76,7 +76,7 @@ Update your `.env` file with the Slack OAuth credentials:
 
 ```env
 # MongoDB Atlas Connection String (already configured)
-MONGODB_URI=mongodb+srv://firas_db_user:qZWkt031JJIOPQQy@production.g8vjv.mongodb.net/
+MONGODB_URI=your_mongodb_uri
 
 # Slack OAuth Configuration
 SLACK_CLIENT_ID=your_slack_client_id_here
