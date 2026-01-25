@@ -1,4 +1,4 @@
-# Armada Analytics Hub - Authentication Setup Guide
+# Armada Analytics Hub - Authentication Setup Tutorial
 
 This guide explains how to set up Slack OAuth authentication for the Armada Analytics Hub.
 
