@@ -10,15 +10,13 @@ const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 
-// MongoDB connection
-let db;
+// MongoDB connection (used for session storage only)
 const mongoClient = new MongoClient(process.env.MONGODB_URI);
 
 async function connectToMongo() {
     try {
         await mongoClient.connect();
-        db = mongoClient.db('armada_analytics');
-        console.log('✅ Connected to MongoDB');
+        console.log('✅ Connected to MongoDB (session storage)');
     } catch (error) {
         console.error('❌ MongoDB connection error:', error);
         process.exit(1);
@@ -47,24 +45,17 @@ function configurePassport() {
                 }
             }
 
+            // Store user data in session (no database write needed)
             const user = {
                 slackId: profile.user.id,
                 email: email,
                 name: profile.user.name,
                 avatar: profile.user.image_192 || profile.user.image_512,
                 team: profile.team?.name,
-                accessToken: accessToken,
                 lastLogin: new Date()
             };
 
-            // Store or update user in database
-            const usersCollection = db.collection('users');
-            await usersCollection.updateOne(
-                { slackId: user.slackId },
-                { $set: user },
-                { upsert: true }
-            );
-
+            console.log('✅ User authenticated:', email);
             return done(null, user);
         } catch (error) {
             console.error('❌ Error in Slack OAuth callback:', error);
@@ -72,20 +63,14 @@ function configurePassport() {
         }
     }));
 
-    // Serialize user for session
+    // Serialize user for session - store entire user object
     passport.serializeUser((user, done) => {
-        done(null, user.slackId);
+        done(null, user);
     });
 
-    // Deserialize user from session
-    passport.deserializeUser(async (slackId, done) => {
-        try {
-            const usersCollection = db.collection('users');
-            const user = await usersCollection.findOne({ slackId });
-            done(null, user);
-        } catch (error) {
-            done(error);
-        }
+    // Deserialize user from session - retrieve entire user object
+    passport.deserializeUser((user, done) => {
+        done(null, user);
     });
 }
 
