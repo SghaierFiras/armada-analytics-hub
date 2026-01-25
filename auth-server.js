@@ -256,6 +256,7 @@ async function startServer() {
         console.log(`🔒 Login page: http://localhost:${PORT}/login`);
         console.log(`\n🔐 Slack OAuth Status: ${process.env.SLACK_CLIENT_ID ? '✅ Configured' : '❌ Not configured'}`);
         console.log(`🌐 Domain Restriction: ${process.env.RESTRICT_DOMAIN === 'true' ? `✅ Enabled (@${process.env.ALLOWED_DOMAIN})` : '❌ Disabled'}`);
+        console.log(`📝 Deployment: Latest version with explicit strategy name`);
         console.log(`\n⚡ Press Ctrl+C to stop the server\n`);
         console.log('='.repeat(60));
     });
