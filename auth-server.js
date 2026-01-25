@@ -28,10 +28,11 @@ async function connectToMongo() {
 // Configure Passport Slack Strategy
 function configurePassport() {
     passport.use(new SlackStrategy({
+        name: 'slack',
         clientID: process.env.SLACK_CLIENT_ID,
         clientSecret: process.env.SLACK_CLIENT_SECRET,
         callbackURL: process.env.SLACK_CALLBACK_URL || 'http://localhost:3000/auth/slack/callback',
-        scope: ['identity.basic', 'identity.email', 'identity.avatar']
+        scope: ['identity.basic', 'identity.email', 'identity.avatar', 'identity.team']
     }, async (accessToken, refreshToken, profile, done) => {
         try {
             console.log('🔍 Slack OAuth callback received for user:', profile.user.id);
@@ -135,6 +136,13 @@ async function startServer() {
     // Configure Passport strategies (AFTER passport.initialize())
     configurePassport();
 
+    // Verify strategy registration
+    if (passport._strategies && passport._strategies.slack) {
+        console.log('✅ Slack strategy registered successfully');
+    } else {
+        console.error('❌ Slack strategy NOT registered - this will cause 500 errors');
+    }
+
     // API endpoint to check auth status
     app.get('/api/auth/status', (req, res) => {
         if (req.isAuthenticated()) {
@@ -228,8 +236,16 @@ async function startServer() {
 
     // Error handler
     app.use((err, req, res, next) => {
-        console.error('Error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error details:', {
+            message: err.message,
+            stack: err.stack,
+            url: req.url,
+            method: req.method
+        });
+        res.status(500).json({
+            error: 'Internal server error',
+            details: process.env.NODE_ENV === 'production' ? undefined : err.message
+        });
     });
 
     app.listen(PORT, '0.0.0.0', () => {
