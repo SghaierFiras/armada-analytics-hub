@@ -34,12 +34,14 @@ function configurePassport() {
         scope: ['identity.basic', 'identity.email', 'identity.avatar']
     }, async (accessToken, refreshToken, profile, done) => {
         try {
+            console.log('🔍 Slack OAuth callback received for user:', profile.user.id);
             const email = profile.user.email;
 
             // Optional: Domain restriction
             if (process.env.RESTRICT_DOMAIN === 'true') {
                 const allowedDomain = process.env.ALLOWED_DOMAIN || 'armadadelivery.com';
                 if (!email.endsWith(`@${allowedDomain}`)) {
+                    console.error(`❌ Access denied: ${email} not in allowed domain ${allowedDomain}`);
                     return done(null, false, { message: `Access restricted to ${allowedDomain} domain only` });
                 }
             }
@@ -64,6 +66,7 @@ function configurePassport() {
 
             return done(null, user);
         } catch (error) {
+            console.error('❌ Error in Slack OAuth callback:', error);
             return done(error);
         }
     }));
@@ -160,12 +163,13 @@ async function startServer() {
     });
 
     // Authentication routes
-    app.get('/auth/slack', passport.authenticate('Slack'));
+    app.get('/auth/slack', passport.authenticate('slack'));
 
     app.get('/auth/slack/callback',
-        passport.authenticate('Slack', { failureRedirect: '/login?error=access_denied' }),
+        passport.authenticate('slack', { failureRedirect: '/login?error=access_denied' }),
         (req, res) => {
             // Successful authentication
+            console.log('✅ User authenticated successfully:', req.user.email);
             res.redirect('/');
         }
     );
