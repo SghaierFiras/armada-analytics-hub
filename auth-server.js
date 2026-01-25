@@ -61,7 +61,11 @@ function configurePassport() {
 
 // Authentication middleware
 function ensureAuthenticated(req, res, next) {
-    console.log('Auth check - isAuthenticated:', req.isAuthenticated(), 'session:', JSON.stringify(req.session));
+    console.log('🔐 Auth check:');
+    console.log('  - isAuthenticated:', req.isAuthenticated());
+    console.log('  - session.passport:', JSON.stringify(req.session?.passport));
+    console.log('  - user:', req.user?.email || 'none');
+
     if (req.isAuthenticated()) {
         return next();
     }
@@ -89,16 +93,22 @@ async function startServer() {
         sameSite: 'lax'
     }));
 
-    // Compatibility shim for cookie-session to work with Passport
-    // cookie-session doesn't provide regenerate/save methods that Passport expects
+    // Improved Passport compatibility shim for cookie-session
+    // Force cookie-session to detect changes when Passport calls save/regenerate
     app.use((req, res, next) => {
         if (req.session && !req.session.regenerate) {
             req.session.regenerate = (cb) => {
+                // Force cookie-session to detect changes by creating new object reference
+                const sessionData = { ...req.session };
+                req.session = sessionData;
                 cb();
             };
         }
         if (req.session && !req.session.save) {
             req.session.save = (cb) => {
+                // Force cookie-session to detect changes by creating new object reference
+                const sessionData = { ...req.session };
+                req.session = sessionData;
                 cb();
             };
         }
@@ -154,11 +164,12 @@ async function startServer() {
         (req, res) => {
             // Successful authentication
             console.log('✅ User authenticated successfully:', req.user.email);
-            console.log('Session after auth:', JSON.stringify(req.session));
+            console.log('📝 Session after auth:', JSON.stringify(req.session));
 
-            // Ensure session is marked as modified for cookie-session
-            req.session.isNew = false;
+            // CRITICAL: Force session mutation to ensure cookie-session saves it
+            req.session = { ...req.session };
 
+            console.log('🍪 Session marked as changed, cookie will be set');
             res.redirect('/');
         }
     );
