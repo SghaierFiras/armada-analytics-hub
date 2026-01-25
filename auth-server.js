@@ -61,9 +61,11 @@ function configurePassport() {
 
 // Authentication middleware
 function ensureAuthenticated(req, res, next) {
+    console.log('Auth check - isAuthenticated:', req.isAuthenticated(), 'session:', JSON.stringify(req.session));
     if (req.isAuthenticated()) {
         return next();
     }
+    console.log('❌ Not authenticated, redirecting to login');
     res.redirect('/login');
 }
 
@@ -152,6 +154,11 @@ async function startServer() {
         (req, res) => {
             // Successful authentication
             console.log('✅ User authenticated successfully:', req.user.email);
+            console.log('Session after auth:', JSON.stringify(req.session));
+
+            // Ensure session is marked as modified for cookie-session
+            req.session.isNew = false;
+
             res.redirect('/');
         }
     );
@@ -177,6 +184,7 @@ async function startServer() {
 
     // Protect all dashboard routes
     app.get('/', ensureAuthenticated, (req, res) => {
+        console.log('Dashboard access - User:', req.user?.email);
         res.sendFile(path.join(__dirname, 'public', 'index.html'));
     });
 
