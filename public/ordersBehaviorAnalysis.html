@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuwait Ordering Behavior Dashboard 2025</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Authentication Script -->
+    <script src="/auth-utils.js"></script>
+</head>
+<body>
+    <!-- User Profile & Logout (populated by auth-utils.js) -->
+    <div style="position: fixed; top: 70px; right: 20px; z-index: 1050; background: white; padding: 12px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        <div id="user-profile-container"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Kuwait Ordering Dashboard 2025</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#overview">Overview</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#time-period">Time Period Analysis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#merchants">Merchant Performance</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Overview Dashboard Section -->
+        <section id="overview" class="dashboard-section">
+            <h2 class="section-title">Overview Dashboard</h2>
+            <p class="text-muted">Kuwait Ordering Behavior - 2025 (Completed Orders Only)</p>
+
+            <!-- Key Metrics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card metric-card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Total Orders</h6>
+                            <h3 class="card-title" id="totalOrders">-</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card metric-card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Peak Period</h6>
+                            <h3 class="card-title" id="peakPeriod">-</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card metric-card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Avg Order Amount</h6>
+                            <h3 class="card-title" id="avgOrderAmount">-</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card metric-card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Top Merchant</h6>
+                            <h3 class="card-title" id="topMerchant">-</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row 1 -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Orders by Time Period</h5>
+                            <canvas id="ordersBarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Order Distribution</h5>
+                            <canvas id="ordersPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row 2 -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Average Order Amount by Time Period</h5>
+                            <canvas id="avgAmountChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Time Period Analysis Section -->
+        <section id="time-period" class="dashboard-section">
+            <h2 class="section-title">Time Period Analysis</h2>
+            <p class="text-muted">Detailed breakdown of ordering behavior across different time periods</p>
+
+            <!-- Period Selector -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <select id="periodSelector" class="form-select">
+                        <option value="all">All Periods</option>
+                        <option value="Breakfast (5:00-9:30 AM)">Breakfast (5:00-9:30 AM)</option>
+                        <option value="Morning Snack (9:30-11:00 AM)">Morning Snack (9:30-11:00 AM)</option>
+                        <option value="Lunch (11:00 AM-3:00 PM)">Lunch (11:00 AM-3:00 PM)</option>
+                        <option value="Afternoon (3:00-6:30 PM)">Afternoon (3:00-6:30 PM)</option>
+                        <option value="Dinner (6:30-10:00 PM)">Dinner (6:30-10:00 PM)</option>
+                        <option value="Late Night (10:00 PM-5:00 AM)">Late Night (10:00 PM-5:00 AM)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Period Stats Cards -->
+            <div class="row mb-4" id="periodStatsCards">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Top Merchants by Period Table -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Top Merchants by Selected Period</h5>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover" id="periodMerchantsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Rank</th>
+                                            <th>Merchant Name</th>
+                                            <th>Time Period</th>
+                                            <th>Order Count</th>
+                                            <th>% of Period</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Dynamically populated -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Merchant Performance Section -->
+        <section id="merchants" class="dashboard-section">
+            <h2 class="section-title">Merchant Performance</h2>
+            <p class="text-muted">Top performing merchants across different time periods</p>
+
+            <!-- Search and Filter -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <input type="text" id="merchantSearch" class="form-control" placeholder="Search merchants...">
+                </div>
+                <div class="col-md-3">
+                    <select id="merchantPeriodFilter" class="form-select">
+                        <option value="all">All Periods</option>
+                        <option value="Breakfast (5:00-9:30 AM)">Breakfast</option>
+                        <option value="Morning Snack (9:30-11:00 AM)">Morning Snack</option>
+                        <option value="Lunch (11:00 AM-3:00 PM)">Lunch</option>
+                        <option value="Afternoon (3:00-6:30 PM)">Afternoon</option>
+                        <option value="Dinner (6:30-10:00 PM)">Dinner</option>
+                        <option value="Late Night (10:00 PM-5:00 AM)">Late Night</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="merchantRankFilter" class="form-select">
+                        <option value="all">All Ranks</option>
+                        <option value="1">Top 1</option>
+                        <option value="3">Top 3</option>
+                        <option value="5">Top 5</option>
+                        <option value="10">Top 10</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Merchant Performance Chart -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Merchant Performance Across Time Periods</h5>
+                            <canvas id="merchantPerformanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Merchant Details Table -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Merchant Details</h5>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover" id="merchantDetailsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Merchant Name</th>
+                                            <th>Time Period</th>
+                                            <th>Rank</th>
+                                            <th>Order Count</th>
+                                            <th>% of Period</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Dynamically populated -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top 5 Merchants Across All Periods -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Top 5 Merchants - Total Orders Across All Periods</h5>
+                            <canvas id="topMerchantsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+        <p class="mb-0">Kuwait Ordering Behavior Dashboard 2025 | Data updated: January 2026</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
