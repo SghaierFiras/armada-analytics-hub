@@ -1,6 +1,6 @@
 # Armada Analytics Hub - Authentication Architecture
 
-## System Overview Global
+## System Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
