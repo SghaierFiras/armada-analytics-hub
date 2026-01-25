@@ -87,6 +87,22 @@ async function startServer() {
         sameSite: 'lax'
     }));
 
+    // Compatibility shim for cookie-session to work with Passport
+    // cookie-session doesn't provide regenerate/save methods that Passport expects
+    app.use((req, res, next) => {
+        if (req.session && !req.session.regenerate) {
+            req.session.regenerate = (cb) => {
+                cb();
+            };
+        }
+        if (req.session && !req.session.save) {
+            req.session.save = (cb) => {
+                cb();
+            };
+        }
+        next();
+    });
+
     // Passport initialization (BEFORE configuring strategies)
     app.use(passport.initialize());
     app.use(passport.session());
