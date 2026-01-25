@@ -1,27 +1,12 @@
 require('dotenv').config();
 const express = require('express');
-const session = require('express-session');
+const cookieSession = require('cookie-session');
 const passport = require('passport');
 const SlackStrategy = require('passport-slack-oauth2').Strategy;
-const MongoStore = require('connect-mongo').default || require('connect-mongo');
 const cookieParser = require('cookie-parser');
-const { MongoClient } = require('mongodb');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
-
-// MongoDB connection (used for session storage only)
-const mongoClient = new MongoClient(process.env.MONGODB_URI);
-
-async function connectToMongo() {
-    try {
-        await mongoClient.connect();
-        console.log('✅ Connected to MongoDB (session storage)');
-    } catch (error) {
-        console.error('❌ MongoDB connection error:', error);
-        process.exit(1);
-    }
-}
 
 // Configure Passport Slack Strategy
 function configurePassport() {
@@ -84,8 +69,6 @@ function ensureAuthenticated(req, res, next) {
 
 // Start server
 async function startServer() {
-    await connectToMongo();
-
     // Create Express app
     const app = express();
 
@@ -94,24 +77,14 @@ async function startServer() {
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
 
-    // Session configuration
-    app.use(session({
-        secret: process.env.SESSION_SECRET || 'armada-analytics-secret-change-in-production',
-        resave: false,
-        saveUninitialized: false,
-        store: MongoStore.create({
-            mongoUrl: process.env.MONGODB_URI,
-            dbName: 'armada_analytics',
-            collectionName: 'sessions',
-            ttl: 7 * 24 * 60 * 60, // 7 days
-            autoRemove: 'disabled', // Disable auto-index creation if user lacks permissions
-            touchAfter: 24 * 3600 // Lazy session update
-        }),
-        cookie: {
-            secure: process.env.NODE_ENV === 'production',
-            httpOnly: true,
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        }
+    // Cookie-based session configuration (no database needed)
+    app.use(cookieSession({
+        name: 'armada-session',
+        keys: [process.env.SESSION_SECRET || 'armada-analytics-secret-change-in-production'],
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'lax'
     }));
 
     // Passport initialization (BEFORE configuring strategies)
@@ -241,7 +214,7 @@ async function startServer() {
         console.log(`🔒 Login page: http://localhost:${PORT}/login`);
         console.log(`\n🔐 Slack OAuth Status: ${process.env.SLACK_CLIENT_ID ? '✅ Configured' : '❌ Not configured'}`);
         console.log(`🌐 Domain Restriction: ${process.env.RESTRICT_DOMAIN === 'true' ? `✅ Enabled (@${process.env.ALLOWED_DOMAIN})` : '❌ Disabled'}`);
-        console.log(`📝 Deployment: Latest version with explicit strategy name`);
+        console.log(`🍪 Session Storage: Cookie-based (no database required)`);
         console.log(`\n⚡ Press Ctrl+C to stop the server\n`);
         console.log('='.repeat(60));
     });
