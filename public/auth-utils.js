@@ -76,6 +76,11 @@ class AuthManager {
         if (!container) return;
 
         const profileHTML = `
+            <div class="logout-btn" onclick="authManager.logout()"
+                 style="padding: 10px 12px; margin-bottom: 16px; cursor: pointer; transition: all 0.2s ease; border-radius: 8px; display: flex; align-items: center; gap: 12px; color: #64748b; font-weight: 500; font-size: 14px; background: transparent;">
+                <span style="font-size: 18px;">🚪</span>
+                <span>Logout</span>
+            </div>
             <div class="user-profile" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 10px; margin-bottom: 16px;">
                 <img src="${this.user.avatar}" alt="${this.user.name}"
                      style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #3b82f6;">
@@ -84,11 +89,7 @@ class AuthManager {
                     <div style="font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${this.user.email}</div>
                 </div>
             </div>
-            <div class="logout-btn" onclick="authManager.logout()"
-                 style="padding: 10px 12px; margin-bottom: 16px; cursor: pointer; transition: all 0.2s ease; border-radius: 8px; display: flex; align-items: center; gap: 12px; color: #64748b; font-weight: 500; font-size: 14px; background: transparent;">
-                <span style="font-size: 18px;">🚪</span>
-                <span>Logout</span>
-            </div>
+            
         `;
 
         container.innerHTML = profileHTML;

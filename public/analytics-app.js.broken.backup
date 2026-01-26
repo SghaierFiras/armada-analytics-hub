@@ -1,0 +1,1537 @@
+/**
+ * Armada Analytics Dashboard Application
+ * Main application logic for dashboard interactivity, charts, and data management
+ */
+
+// ============================================================================
+// 1. GLOBAL STATE MANAGEMENT
+// ============================================================================
+
+const AppState = {
+    currentPage: 'home',
+    filters: {
+        merchants: { year: 'all', size: 'all', area: 'all' },
+        orders: { year: 'all', quarter: 'all', status: 'all' },
+        performance: { year: 'all', quarter: 'all', month: 'all' },
+        orderingBehavior: { period: 'all', merchant: '', rank: 'all' }
+    },
+    charts: {}, // Store Chart.js instances for cleanup
+    data: {}, // Store fetched/mock data
+    isInitialized: false
+};
+
+// Chart color scheme
+const ChartColors = {
+    primary: '#3b82f6',
+    secondary: '#1e40af',
+    success: '#16a34a',
+    warning: '#f59e0b',
+    danger: '#dc2626',
+    purple: '#9333ea',
+    pink: '#ec4899',
+    teal: '#14b8a6',
+    orange: '#f97316',
+    palette: ['#3b82f6', '#16a34a', '#f59e0b', '#ec4899', '#9333ea', '#14b8a6', '#f97316', '#dc2626']
+};
+
+// Default Chart.js configuration
+const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+        legend: {
+            display: true,
+            position: 'top',
+            labels: {
+                padding: 15,
+                font: { size: 12, family: 'Inter' }
+            }
+        },
+        tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            titleFont: { size: 14, weight: 'bold', family: 'Inter' },
+            bodyFont: { size: 13, family: 'Inter' },
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1
+        }
+    }
+};
+
+// ============================================================================
+// 2. NAVIGATION SYSTEM
+// ============================================================================
+
+/**
+ * Navigate to a specific page
+ * @param {string} pageName - The page to navigate to (home, merchants, orders, performance, orderingBehavior)
+ */
+function navigateTo(pageName) {
+    console.log(`Navigating to: ${pageName}`);
+
+    // Hide all pages
+    const pages = ['home', 'merchants', 'orders', 'performance', 'orderingBehavior'];
+    pages.forEach(page => {
+        const pageElement = document.getElementById(page);
+        if (pageElement) {
+            pageElement.style.display = 'none';
+        }
+    });
+
+    // Show target page
+    const targetPage = document.getElementById(pageName);
+    if (targetPage) {
+        targetPage.style.display = 'block';
+    }
+
+    // Update sidebar active state
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Find and activate the correct nav item
+    document.querySelectorAll('.nav-item').forEach(item => {
+        const onclickAttr = item.getAttribute('onclick');
+        if (onclickAttr && onclickAttr.includes(`'${pageName}'`)) {
+            item.classList.add('active');
+        }
+    });
+
+    // Update state
+    AppState.currentPage = pageName;
+
+    // Update URL hash (for bookmarkability)
+    window.location.hash = `/${pageName}`;
+
+    // Load page data and initialize charts if needed
+    if (pageName !== 'home') {
+        loadPageData(pageName).then(() => {
+            initializePageCharts(pageName);
+        });
+    }
+}
+
+/**
+ * Toggle sidebar collapse/expand
+ */
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('collapsed');
+
+        // Update toggle icon if it exists
+        const toggleBtn = document.querySelector('.sidebar-toggle');
+        if (toggleBtn) {
+            const icon = toggleBtn.querySelector('.toggle-icon');
+            if (icon) {
+                icon.style.transform = sidebar.classList.contains('collapsed')
+                    ? 'rotate(180deg)'
+                    : 'rotate(0deg)';
+            }
+        }
+    }
+}
+
+/**
+ * Initialize navigation system
+ */
+function initializeNavigation() {
+    // Setup hash change listener for browser back/forward
+    window.addEventListener('hashchange', () => {
+        const hash = window.location.hash.slice(2); // Remove #/
+        const page = hash || 'home';
+        if (page !== AppState.currentPage) {
+            navigateTo(page);
+        }
+    });
+
+    // Load initial page based on URL hash
+    const initialHash = window.location.hash.slice(2);
+    const initialPage = initialHash || 'home';
+    navigateTo(initialPage);
+}
+
+// ============================================================================
+// 3. DATA MANAGEMENT & MOCK DATA
+// ============================================================================
+
+const MockData = {
+    merchants: {
+        stats: {
+            total: 2151,
+            branches: 1124,
+            retention: 39.5,
+            avgOrdersPerMerchant: 1632
+        },
+        bySize: [
+            { label: 'Micro', count: 1200, percentage: 55.8 },
+            { label: 'Small', count: 450, percentage: 20.9 },
+            { label: 'Medium', count: 320, percentage: 14.9 },
+            { label: 'Large', count: 120, percentage: 5.6 },
+            { label: 'Enterprise', count: 61, percentage: 2.8 }
+        ],
+        byBranch: [
+            { label: 'Single Branch', count: 1027 },
+            { label: 'Multi-Branch', count: 1124 }
+        ],
+        byArea: [
+            { area: 'Salmiya', count: 450 },
+            { area: 'Kuwait City', count: 380 },
+            { area: 'Hawally', count: 290 },
+            { area: 'Farwaniya', count: 245 },
+            { area: 'Ahmadi', count: 220 },
+            { area: 'Jahra', count: 185 },
+            { area: 'Mubarak Al-Kabeer', count: 165 },
+            { area: 'Others', count: 216 }
+        ],
+        cohorts: [
+            { year: 2023, q1: 150, q2: 180, q3: 245, q4: 270 },
+            { year: 2024, q1: 165, q2: 195, q3: 185, q4: 183 },
+            { year: 2025, q1: 142, q2: 148, q3: 155, q4: 133 }
+        ]
+    },
+
+    orders: {
+        stats: {
+            total: 3510000,
+            completionRate: 90.9,
+            avgDeliveryTime: 28.5,
+            growth: 8.1
+        },
+        byStatus: [
+            { status: 'Completed', count: 3190590, percentage: 90.9 },
+            { status: 'Canceled', count: 319410, percentage: 9.1 }
+        ],
+        monthly: generateMonthlyData(),
+        byDay: [
+            { day: 'Monday', orders: 485000 },
+            { day: 'Tuesday', orders: 475000 },
+            { day: 'Wednesday', orders: 520000 },
+            { day: 'Thursday', orders: 545000 },
+            { day: 'Friday', orders: 610000 },
+            { day: 'Saturday', orders: 580000 },
+            { day: 'Sunday', orders: 295000 }
+        ],
+        tripEfficiency: [
+            { quarter: 'Q1 2023', avgTrips: 1.45 },
+            { quarter: 'Q2 2023', avgTrips: 1.38 },
+            { quarter: 'Q3 2023', avgTrips: 1.32 },
+            { quarter: 'Q4 2023', avgTrips: 1.28 },
+            { quarter: 'Q1 2024', avgTrips: 1.25 },
+            { quarter: 'Q2 2024', avgTrips: 1.22 },
+            { quarter: 'Q3 2024', avgTrips: 1.19 },
+            { quarter: 'Q4 2024', avgTrips: 1.17 },
+            { quarter: 'Q1 2025', avgTrips: 1.15 },
+            { quarter: 'Q2 2025', avgTrips: 1.13 },
+            { quarter: 'Q3 2025', avgTrips: 1.12 }
+        ]
+    },
+
+    performance: {
+        stats: {
+            totalRevenue: 48500000,
+            yearOverYearGrowth: 12.3,
+            platformScore: 87.5
+        },
+        monthly: generatePerformanceData(),
+        yearlyComparison: [
+            { year: '2023', orders: 1150000, revenue: 15200000, merchants: 845 },
+            { year: '2024', orders: 1280000, revenue: 17500000, merchants: 1573 },
+            { year: '2025', orders: 1080000, revenue: 15800000, merchants: 2151 }
+        ],
+        quarterly: [
+            { quarter: 'Q1', orders: 310000, revenue: 4100000 },
+            { quarter: 'Q2', orders: 335000, revenue: 4350000 },
+            { quarter: 'Q3', orders: 345000, revenue: 4550000 },
+            { quarter: 'Q4', orders: 365000, revenue: 4850000 }
+        ]
+    }
+};
+
+// Helper function to generate monthly data for 36 months
+function generateMonthlyData() {
+    const months = [];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const years = [2023, 2024, 2025];
+
+    let baseOrders = 85000;
+    years.forEach(year => {
+        monthNames.forEach(month => {
+            const variation = Math.random() * 15000 - 7500;
+            const orders = Math.round(baseOrders + variation);
+            const revenue = Math.round(orders * (13 + Math.random() * 2));
+
+            months.push({
+                month: `${month} ${year}`,
+                orders,
+                revenue
+            });
+        });
+        baseOrders += 5000; // Growth trend
+    });
+
+    return months;
+}
+
+// Helper function to generate performance data
+function generatePerformanceData() {
+    const months = [];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const years = [2023, 2024, 2025];
+
+    let baseOrders = 85000;
+    let baseMerchants = 845;
+    let baseAov = 13.5;
+
+    years.forEach(year => {
+        monthNames.forEach(month => {
+            const ordersVar = Math.random() * 15000 - 7500;
+            const orders = Math.round(baseOrders + ordersVar);
+            const merchants = Math.round(baseMerchants + (Math.random() * 50 - 25));
+            const aov = (baseAov + (Math.random() * 0.8 - 0.4)).toFixed(2);
+
+            months.push({
+                month: `${month} ${year}`,
+                orders,
+                merchants,
+                aov: parseFloat(aov)
+            });
+        });
+        baseOrders += 5000;
+        baseMerchants += 250;
+        baseAov += 0.3;
+    });
+
+    return months;
+}
+
+/**
+ * Load CSV data for ordering behavior page
+ */
+async function loadOrderingBehaviorData() {
+    try {
+        console.log('Loading ordering behavior data from CSV...');
+        const response = await fetch('/data/kuwait_ordering_with_avg_amounts_2025.csv');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const text = await response.text();
+        const data = parseCSV(text);
+        const processed = processOrderingData(data);
+        console.log('CSV data loaded successfully:', processed);
+        return processed;
+    } catch (error) {
+        console.error('Failed to load CSV data:', error);
+        return getSampleOrderingData();
+    }
+}
+
+/**
+ * Parse CSV text into array of objects
+ */
+function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    if (lines.length === 0) return [];
+
+    const headers = lines[0].split(',').map(h => h.trim());
+    const data = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',');
+        if (values.length === headers.length) {
+            const obj = {};
+            headers.forEach((header, index) => {
+                obj[header] = values[index].trim();
+            });
+            data.push(obj);
+        }
+    }
+
+    return data;
+}
+
+/**
+ * Process CSV data into chart-ready format
+ */
+function processOrderingData(rawData) {
+    // Group by time period
+    const periodTotals = {};
+    const merchantData = {};
+
+    rawData.forEach(row => {
+        const period = row['Time Period'] || row['time_period'];
+        const merchant = row['Merchant Name'] || row['merchant_name'];
+        const orderCount = parseInt(row['Order Count'] || row['order_count'] || 0);
+        const avgAmount = parseFloat(row['Avg Order Amount (KD)'] || row['avg_amount'] || 0);
+        const rank = parseInt(row['Rank'] || row['rank'] || 0);
+
+        // Period totals
+        if (!periodTotals[period]) {
+            periodTotals[period] = { orders: 0, totalAmount: 0, count: 0 };
+        }
+        periodTotals[period].orders += orderCount;
+        periodTotals[period].totalAmount += avgAmount * orderCount;
+        periodTotals[period].count += 1;
+
+        // Merchant data
+        if (!merchantData[merchant]) {
+            merchantData[merchant] = {
+                name: merchant,
+                periods: {},
+                totalOrders: 0,
+                avgAmount: 0
+            };
+        }
+        merchantData[merchant].periods[period] = { orders: orderCount, avgAmount, rank };
+        merchantData[merchant].totalOrders += orderCount;
+    });
+
+    // Calculate averages
+    Object.keys(periodTotals).forEach(period => {
+        periodTotals[period].avgAmount = periodTotals[period].totalAmount / periodTotals[period].orders;
+    });
+
+    return {
+        raw: rawData,
+        periodTotals,
+        merchantData
+    };
+}
+
+/**
+ * Get sample ordering data as fallback
+ */
+function getSampleOrderingData() {
+    return {
+        raw: [
+            { 'Time Period': 'Morning', 'Merchant Name': 'Mais Alghanim', 'Order Count': '15000', 'Avg Order Amount (KD)': '12.5', 'Rank': '1' },
+            { 'Time Period': 'Afternoon', 'Merchant Name': 'Mais Alghanim', 'Order Count': '12000', 'Avg Order Amount (KD)': '13.2', 'Rank': '1' },
+            { 'Time Period': 'Evening', 'Merchant Name': 'Mais Alghanim', 'Order Count': '18000', 'Avg Order Amount (KD)': '14.8', 'Rank': '1' },
+            { 'Time Period': 'Night', 'Merchant Name': 'Mais Alghanim', 'Order Count': '8000', 'Avg Order Amount (KD)': '11.5', 'Rank': '2' }
+        ],
+        periodTotals: {
+            'Morning': { orders: 150000, avgAmount: 12.3 },
+            'Afternoon': { orders: 180000, avgAmount: 13.5 },
+            'Evening': { orders: 220000, avgAmount: 14.2 },
+            'Night': { orders: 95000, avgAmount: 11.8 }
+        },
+        merchantData: {
+            'Mais Alghanim': {
+                name: 'Mais Alghanim',
+                periods: {
+                    'Morning': { orders: 15000, avgAmount: 12.5, rank: 1 },
+                    'Afternoon': { orders: 12000, avgAmount: 13.2, rank: 1 },
+                    'Evening': { orders: 18000, avgAmount: 14.8, rank: 1 },
+                    'Night': { orders: 8000, avgAmount: 11.5, rank: 2 }
+                },
+                totalOrders: 53000
+            }
+        }
+    };
+}
+
+/**
+ * Load page data (from CSV or mock)
+ */
+async function loadPageData(pageName) {
+    if (AppState.data[pageName]) {
+        return AppState.data[pageName];
+    }
+
+    if (pageName === 'orderingBehavior') {
+        AppState.data[pageName] = await loadOrderingBehaviorData();
+    } else {
+        AppState.data[pageName] = MockData[pageName];
+    }
+
+    return AppState.data[pageName];
+}
+
+// ============================================================================
+// 4. CHART INITIALIZATION
+// ============================================================================
+
+/**
+ * Destroy chart if it exists
+ */
+function destroyChart(chartKey) {
+    if (AppState.charts[chartKey]) {
+        AppState.charts[chartKey].destroy();
+        delete AppState.charts[chartKey];
+    }
+}
+
+/**
+ * Initialize charts for a specific page
+ */
+function initializePageCharts(pageName) {
+    switch(pageName) {
+        case 'merchants':
+            initializeMerchantsCharts();
+            break;
+        case 'orders':
+            initializeOrdersCharts();
+            break;
+        case 'performance':
+            initializePerformanceCharts();
+            break;
+        case 'orderingBehavior':
+            initializeBehaviorCharts();
+            break;
+    }
+}
+
+// ============================================================================
+// 4.1 MERCHANTS PAGE CHARTS
+// ============================================================================
+
+function initializeMerchantsCharts() {
+    const data = AppState.data.merchants || MockData.merchants;
+
+    // Chart 1: Business Size Distribution (Doughnut)
+    const sizeCanvas = document.getElementById('merchantSizeChart');
+    if (sizeCanvas) {
+        destroyChart('merchantSize');
+        const ctx = sizeCanvas.getContext('2d');
+        AppState.charts.merchantSize = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.bySize.map(d => d.label),
+                datasets: [{
+                    data: data.bySize.map(d => d.count),
+                    backgroundColor: ChartColors.palette,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                plugins: {
+                    ...chartDefaults.plugins,
+                    legend: { display: true, position: 'right' },
+                    tooltip: {
+                        ...chartDefaults.plugins.tooltip,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const percentage = data.bySize[context.dataIndex].percentage;
+                                return `${label}: ${value.toLocaleString()} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 2: Branch Analysis (Bar)
+    const branchCanvas = document.getElementById('merchantBranchChart');
+    if (branchCanvas) {
+        destroyChart('merchantBranch');
+        const ctx = branchCanvas.getContext('2d');
+        AppState.charts.merchantBranch = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.byBranch.map(d => d.label),
+                datasets: [{
+                    label: 'Number of Merchants',
+                    data: data.byBranch.map(d => d.count),
+                    backgroundColor: [ChartColors.primary, ChartColors.success],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 3: Geographic Distribution (Horizontal Bar)
+    const areaCanvas = document.getElementById('merchantAreaChart');
+    if (areaCanvas) {
+        destroyChart('merchantArea');
+        const ctx = areaCanvas.getContext('2d');
+        AppState.charts.merchantArea = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.byArea.map(d => d.area),
+                datasets: [{
+                    label: 'Merchants',
+                    data: data.byArea.map(d => d.count),
+                    backgroundColor: ChartColors.teal,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 4: Cohort Growth (Line)
+    const cohortCanvas = document.getElementById('merchantCohortChart');
+    if (cohortCanvas) {
+        destroyChart('merchantCohort');
+        const ctx = cohortCanvas.getContext('2d');
+
+        const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+        const datasets = data.cohorts.map((yearData, index) => ({
+            label: yearData.year.toString(),
+            data: [yearData.q1, yearData.q2, yearData.q3, yearData.q4],
+            borderColor: ChartColors.palette[index],
+            backgroundColor: ChartColors.palette[index] + '20',
+            tension: 0.4
+        }));
+
+        AppState.charts.merchantCohort = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: quarters,
+                datasets: datasets
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// ============================================================================
+// 4.2 ORDERS PAGE CHARTS
+// ============================================================================
+
+function initializeOrdersCharts() {
+    const data = AppState.data.orders || MockData.orders;
+
+    // Chart 1: Monthly Order Volume (Area Line)
+    const volumeCanvas = document.getElementById('orderVolumeChart');
+    if (volumeCanvas) {
+        destroyChart('orderVolume');
+        const ctx = volumeCanvas.getContext('2d');
+
+        AppState.charts.orderVolume = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.monthly.map(d => d.month),
+                datasets: [{
+                    label: 'Orders',
+                    data: data.monthly.map(d => d.orders),
+                    borderColor: ChartColors.primary,
+                    backgroundColor: function(context) {
+                        const chart = context.chart;
+                        const {ctx, chartArea} = chart;
+                        if (!chartArea) return null;
+                        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.0)');
+                        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.3)');
+                        return gradient;
+                    },
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return (value / 1000) + 'K';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    ...chartDefaults.plugins,
+                    tooltip: {
+                        ...chartDefaults.plugins.tooltip,
+                        callbacks: {
+                            label: function(context) {
+                                return 'Orders: ' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 2: Completion Rate (Doughnut)
+    const completionCanvas = document.getElementById('orderCompletionChart');
+    if (completionCanvas) {
+        destroyChart('orderCompletion');
+        const ctx = completionCanvas.getContext('2d');
+
+        AppState.charts.orderCompletion = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.byStatus.map(d => d.status),
+                datasets: [{
+                    data: data.byStatus.map(d => d.count),
+                    backgroundColor: [ChartColors.success, ChartColors.danger],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                plugins: {
+                    ...chartDefaults.plugins,
+                    legend: { display: true, position: 'bottom' },
+                    tooltip: {
+                        ...chartDefaults.plugins.tooltip,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const percentage = data.byStatus[context.dataIndex].percentage;
+                                return `${label}: ${value.toLocaleString()} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 3: Trip Efficiency (Bar)
+    const tripCanvas = document.getElementById('orderTripChart');
+    if (tripCanvas) {
+        destroyChart('orderTrip');
+        const ctx = tripCanvas.getContext('2d');
+
+        AppState.charts.orderTrip = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.tripEfficiency.map(d => d.quarter),
+                datasets: [{
+                    label: 'Avg Trips per Order',
+                    data: data.tripEfficiency.map(d => d.avgTrips),
+                    backgroundColor: ChartColors.warning,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 2,
+                        ticks: {
+                            stepSize: 0.25
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 4: Peak Days Analysis (Horizontal Bar)
+    const daysCanvas = document.getElementById('orderDaysChart');
+    if (daysCanvas) {
+        destroyChart('orderDays');
+        const ctx = daysCanvas.getContext('2d');
+
+        AppState.charts.orderDays = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.byDay.map(d => d.day),
+                datasets: [{
+                    label: 'Orders',
+                    data: data.byDay.map(d => d.orders),
+                    backgroundColor: ChartColors.purple,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return (value / 1000) + 'K';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// ============================================================================
+// 4.3 PERFORMANCE PAGE CHARTS
+// ============================================================================
+
+function initializePerformanceCharts() {
+    const data = AppState.data.performance || MockData.performance;
+
+    // Chart 1: Multi-Metric Trend (Multi-Line)
+    const trendCanvas = document.getElementById('performanceTrendChart');
+    if (trendCanvas) {
+        destroyChart('performanceTrend');
+        const ctx = trendCanvas.getContext('2d');
+
+        AppState.charts.performanceTrend = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.monthly.map(d => d.month),
+                datasets: [
+                    {
+                        label: 'Orders',
+                        data: data.monthly.map(d => d.orders),
+                        borderColor: ChartColors.primary,
+                        backgroundColor: ChartColors.primary + '20',
+                        yAxisID: 'y',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Merchants',
+                        data: data.monthly.map(d => d.merchants),
+                        borderColor: ChartColors.success,
+                        backgroundColor: ChartColors.success + '20',
+                        yAxisID: 'y1',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Avg Order Value (KD)',
+                        data: data.monthly.map(d => d.aov),
+                        borderColor: ChartColors.warning,
+                        backgroundColor: ChartColors.warning + '20',
+                        yAxisID: 'y2',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                ...chartDefaults,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Orders' },
+                        ticks: {
+                            callback: function(value) {
+                                return (value / 1000) + 'K';
+                            }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'Merchants' },
+                        grid: { drawOnChartArea: false }
+                    },
+                    y2: {
+                        type: 'linear',
+                        display: false,
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 2: Year-over-Year Growth (Grouped Bar)
+    const yoyCanvas = document.getElementById('performanceYoYChart');
+    if (yoyCanvas) {
+        destroyChart('performanceYoY');
+        const ctx = yoyCanvas.getContext('2d');
+
+        AppState.charts.performanceYoY = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.yearlyComparison.map(d => d.year),
+                datasets: [
+                    {
+                        label: 'Orders',
+                        data: data.yearlyComparison.map(d => d.orders),
+                        backgroundColor: ChartColors.primary
+                    },
+                    {
+                        label: 'Merchants',
+                        data: data.yearlyComparison.map(d => d.merchants),
+                        backgroundColor: ChartColors.success
+                    }
+                ]
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value >= 1000 ? (value / 1000) + 'K' : value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 3: Quarterly Patterns (Stacked Bar)
+    const quarterlyCanvas = document.getElementById('performanceQuarterlyChart');
+    if (quarterlyCanvas) {
+        destroyChart('performanceQuarterly');
+        const ctx = quarterlyCanvas.getContext('2d');
+
+        AppState.charts.performanceQuarterly = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.quarterly.map(d => d.quarter),
+                datasets: [{
+                    label: 'Orders',
+                    data: data.quarterly.map(d => d.orders),
+                    backgroundColor: ChartColors.teal
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return (value / 1000) + 'K';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 4: Platform Health Score (Gauge/Radial)
+    const healthCanvas = document.getElementById('performanceHealthChart');
+    if (healthCanvas) {
+        destroyChart('performanceHealth');
+        const ctx = healthCanvas.getContext('2d');
+
+        const score = data.stats.platformScore;
+        const remaining = 100 - score;
+
+        AppState.charts.performanceHealth = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Health Score', 'Remaining'],
+                datasets: [{
+                    data: [score, remaining],
+                    backgroundColor: [ChartColors.success, '#e5e7eb'],
+                    borderWidth: 0,
+                    circumference: 180,
+                    rotation: 270
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                cutout: '75%',
+                plugins: {
+                    ...chartDefaults.plugins,
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+
+        // Add score text in center
+        const parentDiv = healthCanvas.parentElement;
+        let scoreLabel = parentDiv.querySelector('.health-score-label');
+        if (!scoreLabel) {
+            scoreLabel = document.createElement('div');
+            scoreLabel.className = 'health-score-label';
+            scoreLabel.style.position = 'absolute';
+            scoreLabel.style.top = '60%';
+            scoreLabel.style.left = '50%';
+            scoreLabel.style.transform = 'translate(-50%, -50%)';
+            scoreLabel.style.fontSize = '32px';
+            scoreLabel.style.fontWeight = 'bold';
+            scoreLabel.style.color = ChartColors.success;
+            parentDiv.style.position = 'relative';
+            parentDiv.appendChild(scoreLabel);
+        }
+        scoreLabel.textContent = score.toFixed(1);
+    }
+}
+
+// ============================================================================
+// 4.4 ORDERING BEHAVIOR PAGE CHARTS
+// ============================================================================
+
+function initializeBehaviorCharts() {
+    const data = AppState.data.orderingBehavior;
+    if (!data) {
+        console.error('Ordering behavior data not loaded');
+        return;
+    }
+
+    // Chart 1: Orders by Time Period (Bar)
+    const periodCanvas = document.getElementById('behaviorOrdersChart');
+    if (periodCanvas && data.periodTotals) {
+        destroyChart('behaviorOrders');
+        const ctx = periodCanvas.getContext('2d');
+
+        const periods = Object.keys(data.periodTotals);
+        const orders = periods.map(p => data.periodTotals[p].orders);
+
+        AppState.charts.behaviorOrders = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: periods,
+                datasets: [{
+                    label: 'Total Orders',
+                    data: orders,
+                    backgroundColor: ChartColors.primary,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value >= 1000 ? (value / 1000) + 'K' : value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 2: Period Distribution (Pie)
+    const pieCanvas = document.getElementById('behaviorPieChart');
+    if (pieCanvas && data.periodTotals) {
+        destroyChart('behaviorPie');
+        const ctx = pieCanvas.getContext('2d');
+
+        const periods = Object.keys(data.periodTotals);
+        const orders = periods.map(p => data.periodTotals[p].orders);
+
+        AppState.charts.behaviorPie = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: periods,
+                datasets: [{
+                    data: orders,
+                    backgroundColor: ChartColors.palette,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                plugins: {
+                    ...chartDefaults.plugins,
+                    legend: { display: true, position: 'right' }
+                }
+            }
+        });
+    }
+
+    // Chart 3: Avg Order Amount by Period (Line)
+    const avgCanvas = document.getElementById('behaviorAvgChart');
+    if (avgCanvas && data.periodTotals) {
+        destroyChart('behaviorAvg');
+        const ctx = avgCanvas.getContext('2d');
+
+        const periods = Object.keys(data.periodTotals);
+        const avgAmounts = periods.map(p => data.periodTotals[p].avgAmount || 0);
+
+        AppState.charts.behaviorAvg = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: periods,
+                datasets: [{
+                    label: 'Avg Order Amount (KD)',
+                    data: avgAmounts,
+                    borderColor: ChartColors.success,
+                    backgroundColor: ChartColors.success + '20',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'KD ' + value.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 4: Top 5 Merchants (Horizontal Bar)
+    const topMerchantsCanvas = document.getElementById('behaviorTopMerchantsChart');
+    if (topMerchantsCanvas && data.merchantData) {
+        destroyChart('behaviorTopMerchants');
+        const ctx = topMerchantsCanvas.getContext('2d');
+
+        // Get top 5 merchants by total orders
+        const merchants = Object.values(data.merchantData)
+            .sort((a, b) => b.totalOrders - a.totalOrders)
+            .slice(0, 5);
+
+        AppState.charts.behaviorTopMerchants = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: merchants.map(m => m.name),
+                datasets: [{
+                    label: 'Total Orders',
+                    data: merchants.map(m => m.totalOrders),
+                    backgroundColor: ChartColors.orange,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value >= 1000 ? (value / 1000) + 'K' : value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart 5: Merchant Performance Across Periods (Grouped Bar)
+    const performanceCanvas = document.getElementById('behaviorMerchantPerformanceChart');
+    if (performanceCanvas && data.merchantData) {
+        destroyChart('behaviorMerchantPerformance');
+        const ctx = performanceCanvas.getContext('2d');
+
+        // Get top 3 merchants
+        const topMerchants = Object.values(data.merchantData)
+            .sort((a, b) => b.totalOrders - a.totalOrders)
+            .slice(0, 3);
+
+        const periods = Object.keys(data.periodTotals);
+        const datasets = topMerchants.map((merchant, index) => ({
+            label: merchant.name,
+            data: periods.map(period => merchant.periods[period]?.orders || 0),
+            backgroundColor: ChartColors.palette[index]
+        }));
+
+        AppState.charts.behaviorMerchantPerformance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: periods,
+                datasets: datasets
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value >= 1000 ? (value / 1000) + 'K' : value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Update tables
+    updateBehaviorTables(data);
+}
+
+/**
+ * Update ordering behavior tables
+ */
+function updateBehaviorTables(data) {
+    // Top Merchants Table
+    const merchantsTable = document.getElementById('behaviorMerchantsTable');
+    if (merchantsTable && data.merchantData) {
+        const merchants = Object.values(data.merchantData)
+            .sort((a, b) => b.totalOrders - a.totalOrders)
+            .slice(0, 10);
+
+        let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #f1f5f9; text-align: left;"><th style="padding: 12px;">Rank</th><th style="padding: 12px;">Merchant Name</th><th style="padding: 12px;">Total Orders</th></tr></thead><tbody>';
+
+        merchants.forEach((merchant, index) => {
+            html += `<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 12px;">${index + 1}</td><td style="padding: 12px;">${merchant.name}</td><td style="padding: 12px;">${merchant.totalOrders.toLocaleString()}</td></tr>`;
+        });
+
+        html += '</tbody></table>';
+        merchantsTable.innerHTML = html;
+    }
+
+    // Detailed Merchant Data Table
+    const detailsTable = document.getElementById('behaviorMerchantDetailsTable');
+    if (detailsTable && data.raw) {
+        let html = '<table style="width: 100%; border-collapse: collapse; font-size: 13px;"><thead><tr style="background: #f1f5f9; text-align: left;"><th style="padding: 8px;">Time Period</th><th style="padding: 8px;">Rank</th><th style="padding: 8px;">Merchant</th><th style="padding: 8px;">Orders</th><th style="padding: 8px;">Avg Amount</th></tr></thead><tbody>';
+
+        data.raw.slice(0, 20).forEach(row => {
+            const period = row['Time Period'] || row['time_period'] || '';
+            const rank = row['Rank'] || row['rank'] || '';
+            const merchant = row['Merchant Name'] || row['merchant_name'] || '';
+            const orders = row['Order Count'] || row['order_count'] || '';
+            const avgAmount = row['Avg Order Amount (KD)'] || row['avg_amount'] || '';
+
+            html += `<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">${period}</td><td style="padding: 8px;">${rank}</td><td style="padding: 8px;">${merchant}</td><td style="padding: 8px;">${orders}</td><td style="padding: 8px;">KD ${avgAmount}</td></tr>`;
+        });
+
+        html += '</tbody></table>';
+        detailsTable.innerHTML = html;
+    }
+}
+
+// ============================================================================
+// 5. FILTER MANAGEMENT
+// ============================================================================
+
+/**
+ * Initialize filter system
+ */
+function initializeFilters() {
+    // Add event listeners to all filter buttons/selects
+    document.querySelectorAll('[data-filter]').forEach(element => {
+        element.addEventListener('click', function() {
+            const page = this.getAttribute('data-page');
+            const filterType = this.getAttribute('data-filter');
+            const value = this.getAttribute('data-value');
+
+            if (page && filterType && value) {
+                handleFilterChange(page, filterType, value);
+            }
+        });
+    });
+
+    // Handle dropdowns/selects
+    document.querySelectorAll('select[data-filter-select]').forEach(select => {
+        select.addEventListener('change', function() {
+            const page = this.getAttribute('data-page');
+            const filterType = this.getAttribute('data-filter-type');
+            const value = this.value;
+
+            if (page && filterType) {
+                handleFilterChange(page, filterType, value);
+            }
+        });
+    });
+}
+
+/**
+ * Handle filter change
+ */
+function handleFilterChange(page, filterType, value) {
+    console.log(`Filter changed: ${page} - ${filterType} = ${value}`);
+
+    // Update state
+    if (!AppState.filters[page]) {
+        AppState.filters[page] = {};
+    }
+    AppState.filters[page][filterType] = value;
+
+    // Update UI (button states)
+    updateFilterButtonStates(page, filterType, value);
+
+    // Refresh charts with filtered data
+    initializePageCharts(page);
+}
+
+/**
+ * Update filter button active states
+ */
+function updateFilterButtonStates(page, filterType, value) {
+    document.querySelectorAll(`[data-page="${page}"][data-filter="${filterType}"]`).forEach(btn => {
+        if (btn.getAttribute('data-value') === value) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+// ============================================================================
+// 6. EXPORT FUNCTIONALITY
+// ============================================================================
+
+/**
+ * Initialize export functionality
+ */
+function initializeExport() {
+    const exportBtn = document.getElementById('exportBtn');
+    const exportMenu = document.getElementById('exportMenu');
+
+    if (exportBtn && exportMenu) {
+        // Toggle export menu
+        exportBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            exportMenu.classList.toggle('active');
+        });
+
+        // Close menu on outside click
+        document.addEventListener('click', function() {
+            exportMenu.classList.remove('active');
+        });
+
+        // Prevent menu close when clicking inside
+        exportMenu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+}
+
+/**
+ * Handle export (called from HTML)
+ */
+function handleExport(format) {
+    console.log(`Exporting data as ${format}`);
+
+    const currentPage = AppState.currentPage;
+    const data = getCurrentPageExportData();
+
+    if (!data || data.length === 0) {
+        alert('No data available to export');
+        return;
+    }
+
+    const filename = `armada-analytics-${currentPage}-${Date.now()}`;
+
+    switch(format) {
+        case 'csv':
+            exportToCSV(data, filename + '.csv');
+            break;
+        case 'xlsx':
+            exportToXLSX(data, filename + '.xlsx');
+            break;
+        case 'pdf':
+            exportToPDF(data, filename + '.pdf');
+            break;
+    }
+
+    // Close export menu
+    const exportMenu = document.getElementById('exportMenu');
+    if (exportMenu) {
+        exportMenu.classList.remove('active');
+    }
+}
+
+/**
+ * Get current page data for export
+ */
+function getCurrentPageExportData() {
+    const page = AppState.currentPage;
+    const pageData = AppState.data[page];
+
+    if (!pageData) return [];
+
+    // Format data based on page type
+    switch(page) {
+        case 'merchants':
+            return pageData.bySize.map(item => ({
+                'Business Size': item.label,
+                'Count': item.count,
+                'Percentage': item.percentage + '%'
+            }));
+
+        case 'orders':
+            return pageData.monthly.map(item => ({
+                'Month': item.month,
+                'Orders': item.orders,
+                'Revenue (KD)': item.revenue
+            }));
+
+        case 'performance':
+            return pageData.monthly.map(item => ({
+                'Month': item.month,
+                'Orders': item.orders,
+                'Merchants': item.merchants,
+                'Avg Order Value (KD)': item.aov
+            }));
+
+        case 'orderingBehavior':
+            return pageData.raw.map(item => ({
+                'Time Period': item['Time Period'] || item['time_period'],
+                'Rank': item['Rank'] || item['rank'],
+                'Merchant Name': item['Merchant Name'] || item['merchant_name'],
+                'Order Count': item['Order Count'] || item['order_count'],
+                'Avg Order Amount (KD)': item['Avg Order Amount (KD)'] || item['avg_amount']
+            }));
+
+        default:
+            return [];
+    }
+}
+
+/**
+ * Export to CSV
+ */
+function exportToCSV(data, filename) {
+    if (!data || data.length === 0) return;
+
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => headers.map(header => {
+            const value = row[header];
+            // Escape values containing commas or quotes
+            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+        }).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    downloadFile(blob, filename);
+}
+
+/**
+ * Export to XLSX
+ */
+function exportToXLSX(data, filename) {
+    if (!window.XLSX) {
+        alert('XLSX library not loaded');
+        return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Data');
+    XLSX.writeFile(wb, filename);
+}
+
+/**
+ * Export to PDF
+ */
+function exportToPDF(data, filename) {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('jsPDF library not loaded');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Add title
+    doc.setFontSize(16);
+    doc.text('Armada Analytics Report', 14, 15);
+
+    // Add date
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
+
+    // Add table
+    if (data.length > 0) {
+        const headers = Object.keys(data[0]);
+        const rows = data.map(row => Object.values(row));
+
+        doc.autoTable({
+            head: [headers],
+            body: rows,
+            startY: 30,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [59, 130, 246] }
+        });
+    }
+
+    doc.save(filename);
+}
+
+/**
+ * Download file helper
+ */
+function downloadFile(blob, filename) {
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+}
+
+// ============================================================================
+// 7. INITIALIZATION
+// ============================================================================
+
+/**
+ * Initialize the application
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Analytics App Initializing...');
+
+    // Initialize navigation
+    initializeNavigation();
+
+    // Initialize filters
+    initializeFilters();
+
+    // Initialize export
+    initializeExport();
+
+    // Mark as initialized
+    AppState.isInitialized = true;
+
+    console.log('✅ Analytics App Ready!');
+});
+
+// Make functions globally available for onclick handlers
+window.navigateTo = navigateTo;
+window.toggleSidebar = toggleSidebar;
+window.handleExport = handleExport;

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +9,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
     <!-- Authentication Script -->
     <script src="/auth-utils.js"></script>
@@ -55,8 +57,8 @@
         }
 
         .logo {
-            width: 40px;
-            height: 40px;
+            width: 60px;
+            height: 60px;
             background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
             border-radius: 10px;
             display: flex;
@@ -172,7 +174,7 @@
             background: white;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -189,7 +191,7 @@
             border-color: #1e40af;
         }
 
-        .sidebar.collapsed ~ .toggle-sidebar {
+        .sidebar.collapsed~.toggle-sidebar {
             left: 20px;
         }
 
@@ -200,7 +202,7 @@
             min-height: 100vh;
         }
 
-        .sidebar.collapsed ~ .main-content {
+        .sidebar.collapsed~.main-content {
             margin-left: 0;
         }
 
@@ -301,8 +303,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .page-header {
@@ -394,7 +403,7 @@
 
         .dashboard-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
             border-color: #3b82f6;
         }
 
@@ -554,7 +563,7 @@
         }
 
         .stat-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
             transform: translateY(-2px);
         }
 
@@ -629,7 +638,7 @@
         }
 
         .chart-container:hover {
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
         }
 
         .chart-header {
@@ -764,7 +773,7 @@
                 left: 20px;
             }
 
-            .sidebar.open ~ .toggle-sidebar {
+            .sidebar.open~.toggle-sidebar {
                 left: 270px;
             }
         }
@@ -807,7 +816,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Badges */
@@ -853,7 +864,7 @@
             background: white;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
             min-width: 240px;
             opacity: 0;
             visibility: hidden;
@@ -886,7 +897,7 @@
             background: #f8fafc;
         }
 
-        .export-menu-item > span {
+        .export-menu-item>span {
             font-size: 24px;
         }
 
@@ -914,6 +925,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Sidebar Navigation -->
     <div class="sidebar" id="sidebar">
@@ -923,9 +935,6 @@
             </div>
             <h2>Analytics Hub</h2>
         </div>
-
-        <!-- User Profile Container (populated by auth-utils.js) -->
-        <div id="user-profile-container" style="padding: 12px 20px;"></div>
 
         <nav class="nav-menu">
             <div class="nav-section">
@@ -956,14 +965,18 @@
                 </div>
             </div>
         </nav>
+        <!-- User Profile Container (populated by auth-utils.js) -->
+        <div id="user-profile-container" style="padding: 12px 20px;"></div>
 
         <!-- Logout Button -->
-        <div class="logout-card" style="padding: 12px 20px; border-top: 1px solid #e2e8f0; margin-top: auto;">
-            <div class="logout-btn" onclick="authManager.logout()" style="padding: 12px; cursor: pointer; transition: all 0.2s ease; border-radius: 8px; display: flex; align-items: center; gap: 12px; color: #64748b; font-weight: 500; font-size: 14px;">
-                <img width="24" height="24" src="https://img.icons8.com/fluency-systems-regular/48/exit--v1.png" alt="logout" style="opacity: 0.7;"/>
+        <!-- <div class="logout-card" style="padding: 12px 20px; border-top: 1px solid #e2e8f0; margin-top: auto;">
+            <div class="logout-btn" onclick="authManager.logout()"
+                style="padding: 12px; cursor: pointer; transition: all 0.2s ease; border-radius: 8px; display: flex; align-items: center; gap: 12px; color: #64748b; font-weight: 500; font-size: 14px;">
+                <img width="24" height="24" src="https://img.icons8.com/fluency-systems-regular/48/exit--v1.png"
+                    alt="logout" style="opacity: 0.7;" />
                 <span>Logout</span>
             </div>
-        </div>
+        </div> -->
     </div>
 
     <!-- Toggle Button -->
@@ -1033,7 +1046,8 @@
                     <div class="dashboard-card" onclick="navigateTo('merchants')">
                         <div class="card-icon">🏪</div>
                         <h3>Merchant Analytics</h3>
-                        <p>Deep dive into merchant ecosystem, business sizes, multi-branch operations, and growth cohorts.</p>
+                        <p>Deep dive into merchant ecosystem, business sizes, multi-branch operations, and growth
+                            cohorts.</p>
                         <div class="card-stats">
                             <div class="stat-item">
                                 <div class="value">2,151</div>
@@ -1106,10 +1120,14 @@
                         <div class="filter-group">
                             <label class="filter-label">Year</label>
                             <div class="filter-buttons">
-                                <button class="filter-btn active" data-page="merchants" data-filter="year" data-value="all">All Years</button>
-                                <button class="filter-btn" data-page="merchants" data-filter="year" data-value="2023">2023</button>
-                                <button class="filter-btn" data-page="merchants" data-filter="year" data-value="2024">2024</button>
-                                <button class="filter-btn" data-page="merchants" data-filter="year" data-value="2025">2025</button>
+                                <button class="filter-btn active" data-page="merchants" data-filter="year"
+                                    data-value="all">All Years</button>
+                                <button class="filter-btn" data-page="merchants" data-filter="year"
+                                    data-value="2023">2023</button>
+                                <button class="filter-btn" data-page="merchants" data-filter="year"
+                                    data-value="2024">2024</button>
+                                <button class="filter-btn" data-page="merchants" data-filter="year"
+                                    data-value="2025">2025</button>
                             </div>
                         </div>
                         <div class="filter-group">
@@ -1158,10 +1176,14 @@
                         <div class="filter-group">
                             <label class="filter-label">Time Period</label>
                             <div class="filter-buttons">
-                                <button class="filter-btn active" data-page="orders" data-filter="year" data-value="all">All Years</button>
-                                <button class="filter-btn" data-page="orders" data-filter="year" data-value="2023">2023</button>
-                                <button class="filter-btn" data-page="orders" data-filter="year" data-value="2024">2024</button>
-                                <button class="filter-btn" data-page="orders" data-filter="year" data-value="2025">2025</button>
+                                <button class="filter-btn active" data-page="orders" data-filter="year"
+                                    data-value="all">All Years</button>
+                                <button class="filter-btn" data-page="orders" data-filter="year"
+                                    data-value="2023">2023</button>
+                                <button class="filter-btn" data-page="orders" data-filter="year"
+                                    data-value="2024">2024</button>
+                                <button class="filter-btn" data-page="orders" data-filter="year"
+                                    data-value="2025">2025</button>
                             </div>
                         </div>
                         <div class="filter-group">
@@ -1231,7 +1253,8 @@
                         <canvas id="behaviorOrdersChart"></canvas>
                         <div class="insight-box">
                             <h4>📊 Time Distribution</h4>
-                            <p>Afternoon (3-6:30 PM) leads with 28.35% of orders, followed by Dinner (27.05%) and Lunch (24.08%). Strategic staffing needed during peak hours.</p>
+                            <p>Afternoon (3-6:30 PM) leads with 28.35% of orders, followed by Dinner (27.05%) and Lunch
+                                (24.08%). Strategic staffing needed during peak hours.</p>
                         </div>
                     </div>
                     <div class="chart-container">
@@ -1249,7 +1272,8 @@
                         <canvas id="behaviorAvgChart"></canvas>
                         <div class="insight-box info">
                             <h4>💰 Spending Insight</h4>
-                            <p>Lunch period shows highest avg order amount (KD 13.87), 11% above breakfast. Consider premium offerings during lunch hours to maximize revenue.</p>
+                            <p>Lunch period shows highest avg order amount (KD 13.87), 11% above breakfast. Consider
+                                premium offerings during lunch hours to maximize revenue.</p>
                         </div>
                     </div>
                 </div>
@@ -1285,11 +1309,16 @@
                             <table style="width: 100%; border-collapse: collapse;">
                                 <thead style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
                                     <tr>
-                                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Rank</th>
-                                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Merchant Name</th>
-                                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Time Period</th>
-                                        <th style="padding: 12px; text-align: right; font-weight: 600; color: #475569;">Order Count</th>
-                                        <th style="padding: 12px; text-align: right; font-weight: 600; color: #475569;">% of Period</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">
+                                            Rank</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">
+                                            Merchant Name</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">
+                                            Time Period</th>
+                                        <th style="padding: 12px; text-align: right; font-weight: 600; color: #475569;">
+                                            Order Count</th>
+                                        <th style="padding: 12px; text-align: right; font-weight: 600; color: #475569;">
+                                            % of Period</th>
                                     </tr>
                                 </thead>
                                 <tbody id="behaviorMerchantsTable" style="font-size: 14px;">
@@ -1306,7 +1335,8 @@
                     <div class="filter-row">
                         <div class="filter-group">
                             <label class="filter-label">Search Merchants</label>
-                            <input type="text" id="behaviorMerchantSearch" class="filter-select" placeholder="Type merchant name..." style="padding: 10px;">
+                            <input type="text" id="behaviorMerchantSearch" class="filter-select"
+                                placeholder="Type merchant name..." style="padding: 10px;">
                         </div>
                         <div class="filter-group">
                             <label class="filter-label">Filter by Period</label>
@@ -1341,7 +1371,8 @@
                         <canvas id="behaviorTopMerchantsChart"></canvas>
                         <div class="insight-box success">
                             <h4>🏆 Top Performers</h4>
-                            <p>Mais Alghanim dominates with 61K+ orders. Top 5 merchants capture significant market share across all time periods. Focus on retention and upselling strategies.</p>
+                            <p>Mais Alghanim dominates with 61K+ orders. Top 5 merchants capture significant market
+                                share across all time periods. Focus on retention and upselling strategies.</p>
                         </div>
                     </div>
                 </div>
@@ -1364,11 +1395,17 @@
                             <table style="width: 100%; border-collapse: collapse;">
                                 <thead style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
                                     <tr>
-                                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Merchant Name</th>
-                                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Time Period</th>
-                                        <th style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">Rank</th>
-                                        <th style="padding: 12px; text-align: right; font-weight: 600; color: #475569;">Order Count</th>
-                                        <th style="padding: 12px; text-align: right; font-weight: 600; color: #475569;">% of Period</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">
+                                            Merchant Name</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">
+                                            Time Period</th>
+                                        <th
+                                            style="padding: 12px; text-align: center; font-weight: 600; color: #475569;">
+                                            Rank</th>
+                                        <th style="padding: 12px; text-align: right; font-weight: 600; color: #475569;">
+                                            Order Count</th>
+                                        <th style="padding: 12px; text-align: right; font-weight: 600; color: #475569;">
+                                            % of Period</th>
                                     </tr>
                                 </thead>
                                 <tbody id="behaviorMerchantDetailsTable" style="font-size: 14px;">
@@ -1394,10 +1431,14 @@
                         <div class="filter-group">
                             <label class="filter-label">Year</label>
                             <div class="filter-buttons">
-                                <button class="filter-btn active" data-page="performance" data-filter="year" data-value="all">All Years</button>
-                                <button class="filter-btn" data-page="performance" data-filter="year" data-value="2023">2023</button>
-                                <button class="filter-btn" data-page="performance" data-filter="year" data-value="2024">2024</button>
-                                <button class="filter-btn" data-page="performance" data-filter="year" data-value="2025">2025</button>
+                                <button class="filter-btn active" data-page="performance" data-filter="year"
+                                    data-value="all">All Years</button>
+                                <button class="filter-btn" data-page="performance" data-filter="year"
+                                    data-value="2023">2023</button>
+                                <button class="filter-btn" data-page="performance" data-filter="year"
+                                    data-value="2024">2024</button>
+                                <button class="filter-btn" data-page="performance" data-filter="year"
+                                    data-value="2025">2025</button>
                             </div>
                         </div>
                         <div class="filter-group">
@@ -1442,4 +1483,5 @@
 
     <script src="analytics-app.js"></script>
 </body>
+
 </html>
