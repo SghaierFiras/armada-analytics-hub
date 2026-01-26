@@ -78,6 +78,10 @@ async function startServer() {
     // Create Express app
     const app = express();
 
+    // Trust proxy - required for Railway/Heroku/etc reverse proxies
+    // This allows secure cookies to work properly behind HTTPS proxies
+    app.set('trust proxy', 1);
+
     // Basic middleware
     app.use(cookieParser());
     app.use(express.json());
