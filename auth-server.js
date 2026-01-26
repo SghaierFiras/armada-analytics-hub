@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const cookieSession = require('cookie-session');
+const session = require('express-session');
 const passport = require('passport');
 const SlackStrategy = require('passport-slack-oauth2').Strategy;
 const cookieParser = require('cookie-parser');
@@ -83,35 +83,18 @@ async function startServer() {
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
 
-    // Cookie-based session configuration (no database needed)
-    app.use(cookieSession({
-        name: 'armada-session',
-        keys: [process.env.SESSION_SECRET || 'armada-analytics-secret-change-in-production'],
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        sameSite: 'lax'
+    // Express-session with in-memory store (native Passport support)
+    app.use(session({
+        secret: process.env.SESSION_SECRET || 'armada-analytics-secret-change-in-production',
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: true,
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            sameSite: 'lax'
+        }
     }));
-
-    // Improved Passport compatibility shim for cookie-session
-    // Force cookie-session to detect changes when Passport calls save/regenerate
-    app.use((req, res, next) => {
-        if (req.session && !req.session.regenerate) {
-            req.session.regenerate = (cb) => {
-                // Force change detection by mutating session in place
-                req.session._forceUpdate = Date.now();
-                cb();
-            };
-        }
-        if (req.session && !req.session.save) {
-            req.session.save = (cb) => {
-                // Force change detection by mutating session in place
-                req.session._forceUpdate = Date.now();
-                cb();
-            };
-        }
-        next();
-    });
 
     // Passport initialization (BEFORE configuring strategies)
     app.use(passport.initialize());
@@ -163,12 +146,6 @@ async function startServer() {
             // Successful authentication
             console.log('✅ User authenticated successfully:', req.user.email);
             console.log('📝 Session after auth:', JSON.stringify(req.session));
-
-            // CRITICAL: Force session mutation in place to ensure cookie-session saves it
-            // Add a timestamp property to trigger change detection without replacing the object
-            req.session._lastUpdate = Date.now();
-
-            console.log('🍪 Session marked as changed, cookie will be set');
             res.redirect('/');
         }
     );
@@ -248,7 +225,7 @@ async function startServer() {
         console.log(`🔒 Login page: http://localhost:${PORT}/login`);
         console.log(`\n🔐 Slack OAuth Status: ${process.env.SLACK_CLIENT_ID ? '✅ Configured' : '❌ Not configured'}`);
         console.log(`🌐 Domain Restriction: ${process.env.RESTRICT_DOMAIN === 'true' ? `✅ Enabled (@${process.env.ALLOWED_DOMAIN})` : '❌ Disabled'}`);
-        console.log(`🍪 Session Storage: Cookie-based (no database required)`);
+        console.log(`💾 Session Storage: In-memory (express-session)`);
         console.log(`\n⚡ Press Ctrl+C to stop the server\n`);
         console.log('='.repeat(60));
     });
