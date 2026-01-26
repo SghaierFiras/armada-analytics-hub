@@ -98,17 +98,15 @@ async function startServer() {
     app.use((req, res, next) => {
         if (req.session && !req.session.regenerate) {
             req.session.regenerate = (cb) => {
-                // Force cookie-session to detect changes by creating new object reference
-                const sessionData = { ...req.session };
-                req.session = sessionData;
+                // Force change detection by mutating session in place
+                req.session._forceUpdate = Date.now();
                 cb();
             };
         }
         if (req.session && !req.session.save) {
             req.session.save = (cb) => {
-                // Force cookie-session to detect changes by creating new object reference
-                const sessionData = { ...req.session };
-                req.session = sessionData;
+                // Force change detection by mutating session in place
+                req.session._forceUpdate = Date.now();
                 cb();
             };
         }
@@ -166,8 +164,9 @@ async function startServer() {
             console.log('✅ User authenticated successfully:', req.user.email);
             console.log('📝 Session after auth:', JSON.stringify(req.session));
 
-            // CRITICAL: Force session mutation to ensure cookie-session saves it
-            req.session = { ...req.session };
+            // CRITICAL: Force session mutation in place to ensure cookie-session saves it
+            // Add a timestamp property to trigger change detection without replacing the object
+            req.session._lastUpdate = Date.now();
 
             console.log('🍪 Session marked as changed, cookie will be set');
             res.redirect('/');
