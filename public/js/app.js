@@ -97,7 +97,7 @@ class AnalyticsApp {
     });
 
     // Show target page
-    const pageElement = document.getElementById(`${pageName}Page`);
+    const pageElement = document.getElementById(pageName);
     if (pageElement) {
       show(pageElement);
     }
@@ -418,6 +418,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Expose to window for debugging
   window.analyticsApp = app;
   window.appState = appState;
+
+  // Expose navigateTo globally for onclick handlers in HTML
+  window.navigateTo = (pageName) => app.navigateTo(pageName);
 });
 
 export default AnalyticsApp;
