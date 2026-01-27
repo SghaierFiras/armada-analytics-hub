@@ -25,7 +25,7 @@ const colors = {
 async function loadData() {
     try {
         console.log('Loading data...');
-        const response = await fetch('data/kuwait_ordering_with_avg_amounts_2025.csv');
+        const response = await fetch('/data/kuwait_ordering_with_avg_amounts_2025.csv');
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);

@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:verbose": "jest --verbose",
     "start": "node auth-server.js",
     "dev": "node auth-server.js"
   },
@@ -12,14 +15,29 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "apicache": "^1.6.3",
     "connect-mongo": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cookie-session": "^2.1.1",
+    "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.2.1",
     "express-session": "^1.18.2",
+    "helmet": "^8.1.0",
+    "joi": "^18.0.2",
     "mongodb": "^7.0.0",
+    "morgan": "^1.10.1",
     "passport": "^0.7.0",
-    "passport-slack-oauth2": "^1.2.0"
+    "passport-slack-oauth2": "^1.2.0",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "@testsprite/testsprite-mcp": "^0.0.19",
+    "@types/jest": "^30.0.0",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.2.0",
+    "supertest": "^7.2.2"
   }
 }

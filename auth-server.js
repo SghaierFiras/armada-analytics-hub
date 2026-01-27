@@ -6,7 +6,18 @@ const SlackStrategy = require('passport-slack-oauth2').Strategy;
 const cookieParser = require('cookie-parser');
 const path = require('path');
 
-const PORT = process.env.PORT || 3000;
+// Import new backend infrastructure
+const config = require('./src/config');
+const logger = require('./src/utils/logger');
+const dbConnection = require('./src/db/connection');
+const apiRoutes = require('./src/routes');
+
+// Import new middleware
+const { applySecurityMiddleware } = require('./src/middleware/security');
+const { requestLogger } = require('./src/middleware/logging');
+const { errorHandler, notFound } = require('./src/middleware/errorHandler');
+
+const PORT = config.port;
 
 // Configure Passport Slack Strategy
 function configurePassport() {
@@ -75,17 +86,28 @@ function ensureAuthenticated(req, res, next) {
 
 // Start server
 async function startServer() {
+    try {
+        // Connect to MongoDB
+        await dbConnection.connect();
+        logger.info('Database connection established');
+    } catch (error) {
+        logger.error('Failed to connect to database:', error);
+        process.exit(1);
+    }
+
     // Create Express app
     const app = express();
 
-    // Trust proxy - required for Railway/Heroku/etc reverse proxies
-    // This allows secure cookies to work properly behind HTTPS proxies
-    app.set('trust proxy', 1);
+    // Apply security middleware (helmet, CORS, rate limiting, etc.)
+    applySecurityMiddleware(app);
+
+    // HTTP request logging
+    app.use(requestLogger);
 
     // Basic middleware
     app.use(cookieParser());
-    app.use(express.json());
-    app.use(express.urlencoded({ extended: true }));
+    app.use(express.json({ limit: '10mb' }));
+    app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
     // Express-session with in-memory store (native Passport support)
     app.use(session({
@@ -109,10 +131,20 @@ async function startServer() {
 
     // Verify strategy registration
     if (passport._strategies && passport._strategies.slack) {
-        console.log('✅ Slack strategy registered successfully');
+        logger.info('Slack strategy registered successfully');
     } else {
-        console.error('❌ Slack strategy NOT registered - this will cause 500 errors');
+        logger.error('Slack strategy NOT registered - this will cause 500 errors');
     }
+
+    // ============================================
+    // NEW ANALYTICS API ROUTES (No authentication required)
+    // ============================================
+    app.use('/api', apiRoutes);
+    logger.info('Analytics API routes mounted at /api');
+
+    // ============================================
+    // EXISTING AUTHENTICATION ENDPOINTS
+    // ============================================
 
     // API endpoint to check auth status
     app.get('/api/auth/status', (req, res) => {
@@ -204,34 +236,45 @@ async function startServer() {
     app.use('/auth-utils.js', express.static(path.join(__dirname, 'public', 'auth-utils.js')));
     app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
+    // Serve scripts and data directories for ordering behavior analysis
+    app.use('/scripts', express.static(path.join(__dirname, 'scripts')));
+    app.use('/data', express.static(path.join(__dirname, 'data')));
+
     // Serve other static files from public (for assets referenced in HTML)
     app.use(express.static('public'));
 
-    // Error handler
-    app.use((err, req, res, next) => {
-        console.error('Error details:', {
-            message: err.message,
-            stack: err.stack,
-            url: req.url,
-            method: req.method
-        });
-        res.status(500).json({
-            error: 'Internal server error',
-            details: process.env.NODE_ENV === 'production' ? undefined : err.message
-        });
-    });
+    // ============================================
+    // ERROR HANDLING
+    // ============================================
+
+    // Global error handler (from new middleware)
+    app.use(errorHandler);
 
     app.listen(PORT, '0.0.0.0', () => {
         console.log('='.repeat(60));
-        console.log('🚀 Armada Analytics Hub - Authentication Server');
+        console.log('🚀 Armada Analytics Hub - Server Started');
         console.log('='.repeat(60));
         console.log(`\n📊 Server running at: http://0.0.0.0:${PORT}`);
         console.log(`🔒 Login page: http://localhost:${PORT}/login`);
-        console.log(`\n🔐 Slack OAuth Status: ${process.env.SLACK_CLIENT_ID ? '✅ Configured' : '❌ Not configured'}`);
+        console.log(`\n🔐 Slack OAuth: ${process.env.SLACK_CLIENT_ID ? '✅ Configured' : '❌ Not configured'}`);
         console.log(`🌐 Domain Restriction: ${process.env.RESTRICT_DOMAIN === 'true' ? `✅ Enabled (@${process.env.ALLOWED_DOMAIN})` : '❌ Disabled'}`);
         console.log(`💾 Session Storage: In-memory (express-session)`);
+        console.log(`🗄️  Database: ${config.database.name}`);
+        console.log(`\n📡 Analytics API Endpoints:`);
+        console.log(`   - GET  /api/merchants/analytics`);
+        console.log(`   - GET  /api/orders/analytics`);
+        console.log(`   - GET  /api/performance/metrics`);
+        console.log(`   - GET  /api/geographic/analysis`);
+        console.log(`   - GET  /api/health (API health check)`);
+        console.log(`\n📚 Full API documentation: See docs/API.md`);
         console.log(`\n⚡ Press Ctrl+C to stop the server\n`);
         console.log('='.repeat(60));
+
+        logger.info('Server started successfully', {
+            port: PORT,
+            environment: config.env,
+            database: config.database.name
+        });
     });
 }
 
