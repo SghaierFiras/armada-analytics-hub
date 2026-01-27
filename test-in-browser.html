@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Testing Console</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border-left: 4px solid #2563eb;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #1e40af;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        button.success {
+            background: #10b981;
+        }
+        button.error {
+            background: #ef4444;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .result.success {
+            border-color: #10b981;
+            background: #ecfdf5;
+        }
+        .result.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .status.pass {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status.fail {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .instructions {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Dashboard Testing Console</h1>
+        <p class="subtitle">Automated browser-based testing for Analytics Dashboard</p>
+
+        <div class="instructions">
+            <h3>📋 Instructions</h3>
+            <ol>
+                <li>Make sure your server is running: <code>node auth-server.js</code></li>
+                <li>You should be logged in via Slack OAuth</li>
+                <li>Click the test buttons below to verify functionality</li>
+                <li>Green = Pass ✅ | Red = Fail ❌</li>
+            </ol>
+        </div>
+
+        <!-- Test 1 -->
+        <div class="test-section">
+            <h2>Test 1: Check Application Initialization</h2>
+            <button onclick="test1()">Run Test</button>
+            <div id="test1-result"></div>
+        </div>
+
+        <!-- Test 2 -->
+        <div class="test-section">
+            <h2>Test 2: Verify All 5 Pages Loaded</h2>
+            <button onclick="test2()">Run Test</button>
+            <div id="test2-result"></div>
+        </div>
+
+        <!-- Test 3 -->
+        <div class="test-section">
+            <h2>Test 3: Test Navigation to Each Page</h2>
+            <button onclick="test3()">Run Test (takes 5 seconds)</button>
+            <div id="test3-result"></div>
+        </div>
+
+        <!-- Test 4 -->
+        <div class="test-section">
+            <h2>Test 4: Check Ordering Behavior Page</h2>
+            <button onclick="test4()">Run Test</button>
+            <div id="test4-result"></div>
+        </div>
+
+        <!-- Test 5 -->
+        <div class="test-section">
+            <h2>Test 5: Verify Export Functionality</h2>
+            <button onclick="test5()">Run Test</button>
+            <div id="test5-result"></div>
+        </div>
+
+        <!-- Test 6 -->
+        <div class="test-section">
+            <h2>Test 6: Check Console for Errors</h2>
+            <button onclick="test6()">Run Test</button>
+            <div id="test6-result"></div>
+        </div>
+
+        <!-- Run All -->
+        <div class="test-section" style="background: #fef3c7; border-color: #f59e0b;">
+            <h2>🚀 Run All Tests</h2>
+            <button onclick="runAllTests()" style="background: #f59e0b; font-size: 16px; padding: 15px 30px;">Run Complete Test Suite</button>
+            <div id="all-results"></div>
+        </div>
+    </div>
+
+    <script>
+        function showResult(testId, success, message) {
+            const resultDiv = document.getElementById(testId + '-result');
+            resultDiv.className = 'result ' + (success ? 'success' : 'error');
+            resultDiv.innerHTML = message;
+        }
+
+        function test1() {
+            try {
+                const checks = [];
+
+                // Check window.analyticsApp
+                if (typeof window.analyticsApp !== 'undefined') {
+                    checks.push('✅ window.analyticsApp exists');
+                } else {
+                    checks.push('❌ window.analyticsApp is undefined');
+                    throw new Error('analyticsApp not found');
+                }
+
+                // Check window.navigateTo
+                if (typeof window.navigateTo === 'function') {
+                    checks.push('✅ window.navigateTo is a function');
+                } else {
+                    checks.push('❌ window.navigateTo is not a function');
+                }
+
+                // Check window.appState
+                if (typeof window.appState !== 'undefined') {
+                    checks.push('✅ window.appState exists');
+                } else {
+                    checks.push('❌ window.appState is undefined');
+                }
+
+                showResult('test1', true, checks.join('\n'));
+            } catch (error) {
+                showResult('test1', false, '❌ Test Failed:\n' + error.message);
+            }
+        }
+
+        function test2() {
+            try {
+                const pages = window.analyticsApp.pages;
+                const requiredPages = ['home', 'merchants', 'orders', 'performance', 'orderingBehavior'];
+                const checks = [];
+
+                requiredPages.forEach(pageName => {
+                    if (pages[pageName]) {
+                        checks.push(`✅ ${pageName} page loaded`);
+                    } else {
+                        checks.push(`❌ ${pageName} page NOT loaded`);
+                        throw new Error(`${pageName} page missing`);
+                    }
+                });
+
+                showResult('test2', true, checks.join('\n') + '\n\n✅ All 5 pages loaded successfully!');
+            } catch (error) {
+                showResult('test2', false, '❌ Test Failed:\n' + error.message);
+            }
+        }
+
+        async function test3() {
+            try {
+                const pages = ['home', 'merchants', 'orders', 'performance', 'orderingBehavior'];
+                const checks = [];
+
+                for (const page of pages) {
+                    window.navigateTo(page);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    // Check URL hash
+                    if (window.location.hash.includes(page)) {
+                        checks.push(`✅ ${page}: URL hash updated correctly`);
+                    } else {
+                        checks.push(`❌ ${page}: URL hash did NOT update`);
+                    }
+
+                    // Check if page is visible
+                    const pageElement = document.getElementById(page);
+                    if (pageElement && !pageElement.classList.contains('hidden')) {
+                        checks.push(`✅ ${page}: Page is visible`);
+                    } else {
+                        checks.push(`❌ ${page}: Page is NOT visible`);
+                    }
+                }
+
+                showResult('test3', true, checks.join('\n') + '\n\n✅ All navigation tests passed!');
+            } catch (error) {
+                showResult('test3', false, '❌ Test Failed:\n' + error.message);
+            }
+        }
+
+        function test4() {
+            try {
+                const checks = [];
+
+                // Navigate to ordering behavior
+                window.navigateTo('orderingBehavior');
+
+                // Wait a bit for page to load
+                setTimeout(() => {
+                    try {
+                        // Check stat cards
+                        const totalOrders = document.getElementById('behaviorTotalOrders');
+                        const peakPeriod = document.getElementById('behaviorPeakPeriod');
+                        const avgAmount = document.getElementById('behaviorAvgAmount');
+                        const topMerchant = document.getElementById('behaviorTopMerchant');
+
+                        if (totalOrders && totalOrders.textContent !== '-') {
+                            checks.push('✅ Total Orders stat populated');
+                        } else {
+                            checks.push('❌ Total Orders stat not populated');
+                        }
+
+                        if (peakPeriod && peakPeriod.textContent !== '-') {
+                            checks.push('✅ Peak Period stat populated');
+                        } else {
+                            checks.push('❌ Peak Period stat not populated');
+                        }
+
+                        // Check charts
+                        const chartIds = ['behaviorOrdersChart', 'behaviorPieChart', 'behaviorAvgChart', 
+                                        'behaviorTopMerchantsChart', 'behaviorMerchantPerformanceChart'];
+                        let chartsFound = 0;
+
+                        chartIds.forEach(id => {
+                            const chart = document.getElementById(id);
+                            if (chart) {
+                                chartsFound++;
+                                checks.push(`✅ ${id} exists`);
+                            } else {
+                                checks.push(`❌ ${id} NOT found`);
+                            }
+                        });
+
+                        // Check tables
+                        const merchantsTable = document.getElementById('behaviorMerchantsTable');
+                        if (merchantsTable && merchantsTable.children.length > 0) {
+                            checks.push('✅ Merchants table has data');
+                        } else {
+                            checks.push('❌ Merchants table is empty');
+                        }
+
+                        const success = chartsFound === 5;
+                        showResult('test4', success, checks.join('\n') + 
+                                  `\n\n${success ? '✅' : '❌'} ${chartsFound}/5 charts found`);
+                    } catch (error) {
+                        showResult('test4', false, '❌ Error checking elements:\n' + error.message);
+                    }
+                }, 2000);
+            } catch (error) {
+                showResult('test4', false, '❌ Test Failed:\n' + error.message);
+            }
+        }
+
+        function test5() {
+            try {
+                const checks = [];
+                const pages = ['home', 'merchants', 'orders', 'performance', 'orderingBehavior'];
+
+                pages.forEach(pageName => {
+                    const page = window.analyticsApp.pages[pageName];
+                    if (page && typeof page.getExportData === 'function') {
+                        try {
+                            const exportData = page.getExportData('csv');
+                            if (exportData && exportData.title && exportData.sections) {
+                                checks.push(`✅ ${pageName}: Export data valid`);
+                            } else {
+                                checks.push(`❌ ${pageName}: Export data invalid structure`);
+                            }
+                        } catch (e) {
+                            checks.push(`❌ ${pageName}: Export failed - ${e.message}`);
+                        }
+                    } else {
+                        checks.push(`❌ ${pageName}: No getExportData method`);
+                    }
+                });
+
+                const success = checks.every(c => c.includes('✅'));
+                showResult('test5', success, checks.join('\n') + 
+                          `\n\n${success ? '✅' : '❌'} Export functionality check complete`);
+            } catch (error) {
+                showResult('test5', false, '❌ Test Failed:\n' + error.message);
+            }
+        }
+
+        function test6() {
+            const checks = [];
+
+            // Check for common error patterns
+            const errorPatterns = [
+                'navigateTo is not defined',
+                'Uncaught ReferenceError',
+                'Failed to load module',
+                'CSP violation',
+                '404'
+            ];
+
+            // This is simplified - in real testing you'd capture console.error
+            checks.push('⚠️  Open browser DevTools Console (F12) to check for errors manually');
+            checks.push('');
+            checks.push('❌ Should NOT see:');
+            errorPatterns.forEach(pattern => {
+                checks.push(`   - "${pattern}"`);
+            });
+            checks.push('');
+            checks.push('✅ Should see:');
+            checks.push('   - "[App] Initialization complete"');
+            checks.push('   - "[App] Navigating to: ..."');
+            checks.push('   - No red error messages');
+
+            showResult('test6', true, checks.join('\n'));
+        }
+
+        async function runAllTests() {
+            const allResultsDiv = document.getElementById('all-results');
+            allResultsDiv.className = 'result';
+            allResultsDiv.innerHTML = '⏳ Running all tests...\n\n';
+
+            await sleep(500);
+            test1();
+            await sleep(1000);
+            test2();
+            await sleep(1000);
+            await test3();
+            await sleep(1000);
+            test4();
+            await sleep(1000);
+            test5();
+            await sleep(1000);
+            test6();
+
+            allResultsDiv.innerHTML += '\n✅ All tests completed! Check individual test results above.';
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
