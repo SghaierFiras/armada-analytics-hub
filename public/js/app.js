@@ -8,10 +8,12 @@ import HomePage from './pages/homePage.js';
 import MerchantsPage from './pages/merchantsPage.js';
 import OrdersPage from './pages/ordersPage.js';
 import PerformancePage from './pages/performancePage.js';
+import OrderingBehaviorPage from './pages/orderingBehaviorPage.js';
 import ExportButton from './components/ExportButton.js';
 import FilterPanel from './components/FilterPanel.js';
 import appState from './state/appState.js';
 import { show, hide, addClass, removeClass } from './utils/domUtils.js';
+import ExportService from './utils/exportUtils.js';
 
 /**
  * AnalyticsApp Class
@@ -24,7 +26,8 @@ class AnalyticsApp {
       home: new HomePage(),
       merchants: new MerchantsPage(),
       orders: new OrdersPage(),
-      performance: new PerformancePage()
+      performance: new PerformancePage(),
+      orderingBehavior: new OrderingBehaviorPage()
     };
 
     this.currentPage = 'home';
@@ -156,6 +159,9 @@ class AnalyticsApp {
 
     // Performance filters
     this.setupPerformanceFilters();
+
+    // Ordering Behavior filters
+    this.setupOrderingBehaviorFilters();
   }
 
   /**
@@ -313,6 +319,36 @@ class AnalyticsApp {
   }
 
   /**
+   * Setup ordering behavior page filters
+   */
+  setupOrderingBehaviorFilters() {
+    const filterConfig = {
+      id: 'orderingBehaviorFilters',
+      filters: [
+        {
+          type: 'select',
+          id: 'behaviorYear',
+          label: 'Year',
+          options: [
+            { value: '2025', label: '2025' },
+            { value: '2024', label: '2024' },
+            { value: '2023', label: '2023' }
+          ],
+          value: '2025'
+        }
+      ]
+    };
+
+    const container = document.getElementById('orderingBehaviorFilters');
+    if (container) {
+      container.innerHTML = FilterPanel.render(filterConfig);
+      FilterPanel.init('orderingBehaviorFilters', (filterId, value) => {
+        this.handleFilterChange('orderingBehavior', filterId, value);
+      });
+    }
+  }
+
+  /**
    * Handle filter change
    * @param {string} pageName - Page name
    * @param {string} filterId - Filter ID
@@ -370,7 +406,6 @@ class AnalyticsApp {
 
     try {
       const exportConfig = page.getExportData(format);
-      const ExportService = require('./utils/exportUtils.js').default;
 
       ExportService.export({
         ...exportConfig,
