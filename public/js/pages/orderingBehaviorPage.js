@@ -3,7 +3,7 @@
  * Handles time-based ordering pattern analysis
  */
 
-import ChartFactory from '../components/ChartFactory.js';
+import ChartFactory from '../components/charts/ChartFactory.js';
 import appState from '../state/appState.js';
 import { formatNumber, formatCurrency, formatPercent } from '../utils/formatters.js';
 import { setHTML, setText, showLoading, showError } from '../utils/domUtils.js';

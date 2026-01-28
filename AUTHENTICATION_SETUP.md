@@ -255,6 +255,64 @@ db.users.find({}).pretty()
 }
 ```
 
+## Dynamic Environment Redirect
+
+The authentication system now supports **automatic environment detection** for post-login redirects. This ensures users are redirected back to their original environment (localhost or production) after authenticating with Slack.
+
+### How It Works
+
+When a user initiates OAuth login:
+1. The system captures the current origin (protocol + host, e.g., `http://localhost:3000` or `https://your-app.railway.app`)
+2. Stores this origin in the session
+3. After successful Slack authentication, redirects the user back to that specific origin
+
+### Benefits
+
+- **Seamless Development**: Login from `localhost:3000` → redirects back to `localhost:3000`
+- **Seamless Production**: Login from production URL → redirects back to production URL
+- **No Configuration Needed**: Works automatically across all deployment environments
+- **Security**: Validates redirect URLs to prevent open redirect vulnerabilities
+
+### Testing the Dynamic Redirect
+
+**Test Case 1: Localhost**
+```bash
+# Start server
+npm start
+
+# Visit http://localhost:3000/login
+# Click "Sign in with Slack"
+# After authentication → redirects to http://localhost:3000/
+```
+
+**Test Case 2: Production**
+```bash
+# Visit https://your-deployment-url.com/login
+# Click "Sign in with Slack"
+# After authentication → redirects to https://your-deployment-url.com/
+```
+
+### Technical Implementation
+
+The redirect logic uses two methods for reliability:
+1. **Session Storage (Primary)**: Stores origin in `req.session.oauthReturnTo`
+2. **OAuth State Parameter (Fallback)**: Passes origin through OAuth flow as base64-encoded state
+
+This dual approach ensures the redirect works even if session persistence is interrupted during the OAuth flow.
+
+### Slack App Configuration
+
+**Important**: You need to register **all redirect URLs** in your Slack app settings:
+
+1. Go to [Slack API Apps](https://api.slack.com/apps)
+2. Select your app → **OAuth & Permissions**
+3. Under **Redirect URLs**, add:
+   - `http://localhost:3000/auth/slack/callback` (development)
+   - `https://your-production-url.com/auth/slack/callback` (production)
+   - Any additional staging/testing environments
+
+The callback URL must match exactly what Slack expects, while the final user redirect is handled dynamically by our server.
+
 ## Troubleshooting
 
 ### Error: "SLACK_CLIENT_ID is not defined"

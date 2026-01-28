@@ -45,8 +45,8 @@ class AnalyticsApp {
     // Setup filter panels
     this.setupFilters();
 
-    // Setup export button
-    this.setupExport();
+    // Setup export menu (static HTML approach)
+    this.setupStaticExportMenu();
 
     // Subscribe to state changes
     this.subscribeToState();
@@ -373,22 +373,38 @@ class AnalyticsApp {
   }
 
   /**
-   * Setup export button
+   * Setup static export menu interactions
    */
-  setupExport() {
-    const exportContainer = document.getElementById('exportContainer');
-    if (!exportContainer) return;
+  setupStaticExportMenu() {
+    const exportBtn = document.getElementById('exportBtn');
+    const exportMenu = document.getElementById('exportMenu');
 
-    // Render export button
-    exportContainer.innerHTML = ExportButton.render({
-      id: 'exportBtn',
-      formats: ['csv', 'xlsx', 'pdf', 'json']
+    if (!exportBtn || !exportMenu) {
+      console.warn('[App] Export button or menu not found in HTML');
+      return;
+    }
+
+    // Toggle menu on button click
+    exportBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportMenu.classList.toggle('active');
     });
 
-    // Initialize with handler
-    ExportButton.init('exportBtn', (format) => {
-      this.handleExport(format);
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!exportBtn.contains(e.target) && !exportMenu.contains(e.target)) {
+        exportMenu.classList.remove('active');
+      }
     });
+
+    // Close menu on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && exportMenu.classList.contains('active')) {
+        exportMenu.classList.remove('active');
+      }
+    });
+
+    console.log('[App] Static export menu setup complete');
   }
 
   /**
@@ -447,15 +463,84 @@ class AnalyticsApp {
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   console.log('[App] DOM loaded, initializing app...');
-  const app = new AnalyticsApp();
-  app.init();
 
-  // Expose to window for debugging
-  window.analyticsApp = app;
-  window.appState = appState;
+  try {
+    const app = new AnalyticsApp();
+    app.init().catch(error => {
+      console.error('[App] Initialization failed:', error);
+      showInitializationError(error);
+    });
 
-  // Expose navigateTo globally for onclick handlers in HTML
-  window.navigateTo = (pageName) => app.navigateTo(pageName);
+    // Expose to window for debugging
+    window.analyticsApp = app;
+    window.appState = appState;
+
+    // Expose navigateTo globally for onclick handlers in HTML
+    window.navigateTo = (pageName) => app.navigateTo(pageName);
+
+    // Expose toggleSidebar for sidebar toggle button (index.html line 983)
+    window.toggleSidebar = function() {
+      const sidebar = document.getElementById('sidebar');
+      const icon = document.getElementById('toggleIcon');
+
+      if (!sidebar || !icon) {
+        console.error('[App] Sidebar elements not found');
+        return;
+      }
+
+      sidebar.classList.toggle('collapsed');
+      sidebar.classList.toggle('open');
+      icon.textContent = sidebar.classList.contains('collapsed') ||
+                         sidebar.classList.contains('open') ? '☰' : '✕';
+
+      console.log('[App] Sidebar toggled');
+    };
+
+    // Expose handleExport for export menu items (index.html lines 1003, 1010, 1017)
+    window.handleExport = function(format) {
+      console.log('[App] Export triggered:', format);
+
+      // Close the export menu
+      const exportMenu = document.getElementById('exportMenu');
+      if (exportMenu) {
+        exportMenu.classList.remove('active');
+      }
+
+      // Delegate to existing handleExport method
+      app.handleExport(format);
+    };
+  } catch (error) {
+    console.error('[App] Critical error during initialization:', error);
+    showInitializationError(error);
+  }
 });
+
+// Show initialization error to user
+function showInitializationError(error) {
+  const body = document.body;
+  const errorDiv = document.createElement('div');
+  errorDiv.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #fee;
+    border: 2px solid #c00;
+    color: #c00;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 400px;
+    z-index: 10000;
+    font-family: monospace;
+  `;
+  errorDiv.innerHTML = `
+    <h3 style="margin: 0 0 10px 0;">Application Failed to Load</h3>
+    <p style="margin: 0 0 10px 0;">The application encountered an error during initialization.</p>
+    <details>
+      <summary style="cursor: pointer;">Technical Details</summary>
+      <pre style="margin: 10px 0 0 0; font-size: 12px; overflow: auto;">${error.stack || error.message}</pre>
+    </details>
+  `;
+  body.appendChild(errorDiv);
+}
 
 export default AnalyticsApp;

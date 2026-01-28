@@ -77,6 +77,23 @@ function ensureAuthenticated(req, res, next) {
     console.log('  - session.passport:', JSON.stringify(req.session?.passport));
     console.log('  - user:', req.user?.email || 'none');
 
+    // Development bypass: Skip auth if SKIP_AUTH=true in .env (localhost only)
+    if (process.env.SKIP_AUTH === 'true' && process.env.NODE_ENV === 'development') {
+        console.log('⚠️  DEV MODE: Skipping authentication (SKIP_AUTH=true)');
+        // Create a mock user for development
+        if (!req.user) {
+            req.user = {
+                slackId: 'dev-user',
+                email: 'dev@armadadelivery.com',
+                name: 'Development User',
+                avatar: 'https://via.placeholder.com/192',
+                team: 'Development',
+                lastLogin: new Date()
+            };
+        }
+        return next();
+    }
+
     if (req.isAuthenticated()) {
         return next();
     }
@@ -174,7 +191,19 @@ async function startServer() {
     });
 
     // Authentication routes
-    app.get('/auth/slack', passport.authenticate('slack'));
+    app.get('/auth/slack', (req, res, next) => {
+        // Capture the origin (protocol + host) for redirect after authentication
+        const origin = `${req.protocol}://${req.get('host')}`;
+        console.log('🔐 Initiating Slack OAuth from origin:', origin);
+
+        // Store origin in session for retrieval after OAuth completes
+        req.session.oauthReturnTo = origin;
+
+        // Pass the origin through OAuth flow using state parameter as backup
+        passport.authenticate('slack', {
+            state: Buffer.from(JSON.stringify({ returnTo: origin })).toString('base64')
+        })(req, res, next);
+    });
 
     app.get('/auth/slack/callback',
         passport.authenticate('slack', { failureRedirect: '/login?error=access_denied' }),
@@ -182,7 +211,39 @@ async function startServer() {
             // Successful authentication
             console.log('✅ User authenticated successfully:', req.user.email);
             console.log('📝 Session after auth:', JSON.stringify(req.session));
-            res.redirect('/');
+
+            // Determine redirect URL based on where auth was initiated
+            let redirectUrl = '/';
+
+            // Method 1: Try to get from session (most reliable)
+            if (req.session.oauthReturnTo) {
+                redirectUrl = req.session.oauthReturnTo;
+                console.log('🔄 Redirecting to origin from session:', redirectUrl);
+                // Clean up the session variable
+                delete req.session.oauthReturnTo;
+            } else {
+                // Method 2: Fallback to state parameter
+                try {
+                    if (req.query.state) {
+                        const stateData = JSON.parse(Buffer.from(req.query.state, 'base64').toString());
+                        if (stateData.returnTo) {
+                            // Validate that returnTo is a valid URL
+                            const returnUrl = new URL(stateData.returnTo);
+
+                            // Security: Only redirect to same app on different hosts (localhost or deployment)
+                            // This prevents open redirect vulnerabilities
+                            if (returnUrl.protocol === 'http:' || returnUrl.protocol === 'https:') {
+                                redirectUrl = stateData.returnTo;
+                                console.log('🔄 Redirecting to origin from state:', redirectUrl);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.warn('⚠️  Could not parse state parameter, using default redirect:', error.message);
+                }
+            }
+
+            res.redirect(redirectUrl);
         }
     );
 
