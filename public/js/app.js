@@ -61,8 +61,8 @@ class AnalyticsApp {
    * Setup navigation handlers
    */
   setupNavigation() {
-    // Navigation links
-    const navLinks = document.querySelectorAll('[data-page]');
+    // Navigation links - exclude filter buttons that have data-filter attribute
+    const navLinks = document.querySelectorAll('[data-page]:not([data-filter])');
 
     navLinks.forEach(link => {
       link.addEventListener('click', (e) => {
