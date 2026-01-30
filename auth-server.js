@@ -126,6 +126,28 @@ async function startServer() {
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+    // ============================================
+    // STATIC FILE SERVING (Must come BEFORE session/auth)
+    // ============================================
+    // Serve JavaScript modules and assets without authentication
+    // ES6 modules require proper MIME types and Content-Type headers
+
+    // Serve JS directory (ES6 modules)
+    app.use('/js', express.static(path.join(__dirname, 'public', 'js'), {
+        setHeaders: (res, filePath) => {
+            if (filePath.endsWith('.js')) {
+                res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+            }
+        }
+    }));
+
+    // Serve CSS and other assets
+    app.use('/css', express.static(path.join(__dirname, 'public', 'css')));
+    app.use('/assets', express.static(path.join(__dirname, 'assets')));
+    app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
+
+    logger.info('Static file serving configured (before authentication)');
+
     // Express-session with in-memory store (native Passport support)
     app.use(session({
         secret: process.env.SESSION_SECRET || 'armada-analytics-secret-change-in-production',
@@ -293,16 +315,15 @@ async function startServer() {
         res.json({ status: 'ok', timestamp: new Date() });
     });
 
-    // Serve static assets (JS, CSS, images) - these don't need protection
+    // ============================================
+    // AUTHENTICATED STATIC RESOURCES
+    // ============================================
+    // Serve auth-utils.js (contains authentication logic)
     app.use('/auth-utils.js', express.static(path.join(__dirname, 'public', 'auth-utils.js')));
-    app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
     // Serve scripts and data directories for ordering behavior analysis
     app.use('/scripts', express.static(path.join(__dirname, 'scripts')));
     app.use('/data', express.static(path.join(__dirname, 'data')));
-
-    // Serve other static files from public (for assets referenced in HTML)
-    app.use(express.static('public'));
 
     // ============================================
     // ERROR HANDLING
