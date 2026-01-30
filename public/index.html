@@ -980,7 +980,7 @@
     </div>
 
     <!-- Toggle Button -->
-    <div class="toggle-sidebar" onclick="toggleSidebar()">
+    <div class="toggle-sidebar" data-action="toggle-sidebar">
         <span id="toggleIcon">☰</span>
     </div>
 
@@ -1000,21 +1000,21 @@
                         <span style="margin-left: 4px;">▼</span>
                     </button>
                     <div class="export-menu" id="exportMenu">
-                        <div class="export-menu-item" onclick="handleExport('csv')">
+                        <div class="export-menu-item" data-export="csv">
                             <span>📄</span>
                             <div>
                                 <div class="menu-item-title">CSV</div>
                                 <div class="menu-item-subtitle">Comma-separated values</div>
                             </div>
                         </div>
-                        <div class="export-menu-item" onclick="handleExport('xlsx')">
+                        <div class="export-menu-item" data-export="xlsx">
                             <span>📊</span>
                             <div>
                                 <div class="menu-item-title">XLSX</div>
                                 <div class="menu-item-subtitle">Excel spreadsheet</div>
                             </div>
                         </div>
-                        <div class="export-menu-item" onclick="handleExport('pdf')">
+                        <div class="export-menu-item" data-export="pdf">
                             <span>📑</span>
                             <div>
                                 <div class="menu-item-title">PDF</div>
@@ -1043,7 +1043,7 @@
                 </div>
 
                 <div class="dashboard-grid">
-                    <div class="dashboard-card" onclick="navigateTo('merchants')">
+                    <div class="dashboard-card" data-page="merchants">
                         <div class="card-icon">🏪</div>
                         <h3>Merchant Analytics</h3>
                         <p>Deep dive into merchant ecosystem, business sizes, multi-branch operations, and growth
@@ -1064,7 +1064,7 @@
                         </div>
                     </div>
 
-                    <div class="dashboard-card" onclick="navigateTo('orders')">
+                    <div class="dashboard-card" data-page="orders">
                         <div class="card-icon">📦</div>
                         <h3>Orders & Delivery</h3>
                         <p>Track order volume, completion rates, delivery trips, and operational efficiency metrics.</p>
@@ -1084,7 +1084,7 @@
                         </div>
                     </div>
 
-                    <div class="dashboard-card" onclick="navigateTo('performance')">
+                    <div class="dashboard-card" data-page="performance">
                         <div class="card-icon">📈</div>
                         <h3>Platform Performance</h3>
                         <p>Monitor monthly trends, seasonal patterns, and year-over-year growth across the platform.</p>

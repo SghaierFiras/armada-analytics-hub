@@ -48,6 +48,9 @@ class AnalyticsApp {
     // Setup export menu (static HTML approach)
     this.setupStaticExportMenu();
 
+    // Setup event listeners (CSP-compliant)
+    this.setupEventListeners();
+
     // Subscribe to state changes
     this.subscribeToState();
 
@@ -408,6 +411,55 @@ class AnalyticsApp {
   }
 
   /**
+   * Setup event listeners for inline handlers (CSP-compliant)
+   */
+  setupEventListeners() {
+    // Toggle sidebar button
+    const toggleBtn = document.querySelector('[data-action="toggle-sidebar"]');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const sidebar = document.getElementById('sidebar');
+        const icon = document.getElementById('toggleIcon');
+
+        if (sidebar && icon) {
+          sidebar.classList.toggle('collapsed');
+          sidebar.classList.toggle('open');
+          icon.textContent = sidebar.classList.contains('collapsed') ||
+                            sidebar.classList.contains('open') ? '☰' : '✕';
+          console.log('[App] Sidebar toggled');
+        }
+      });
+    }
+
+    // Export menu items
+    document.querySelectorAll('[data-export]').forEach(item => {
+      item.addEventListener('click', (e) => {
+        const format = e.currentTarget.getAttribute('data-export');
+        console.log('[App] Export triggered:', format);
+
+        // Close export menu
+        const exportMenu = document.getElementById('exportMenu');
+        if (exportMenu) {
+          exportMenu.classList.remove('active');
+        }
+
+        // Trigger export
+        this.handleExport(format);
+      });
+    });
+
+    // Dashboard cards navigation
+    document.querySelectorAll('.dashboard-card[data-page]').forEach(card => {
+      card.addEventListener('click', (e) => {
+        const pageName = e.currentTarget.getAttribute('data-page');
+        this.navigateTo(pageName);
+      });
+    });
+
+    console.log('[App] Event listeners setup complete (CSP-compliant)');
+  }
+
+  /**
    * Handle export
    * @param {string} format - Export format
    */
@@ -475,40 +527,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.analyticsApp = app;
     window.appState = appState;
 
-    // Expose navigateTo globally for onclick handlers in HTML
-    window.navigateTo = (pageName) => app.navigateTo(pageName);
-
-    // Expose toggleSidebar for sidebar toggle button (index.html line 983)
-    window.toggleSidebar = function() {
-      const sidebar = document.getElementById('sidebar');
-      const icon = document.getElementById('toggleIcon');
-
-      if (!sidebar || !icon) {
-        console.error('[App] Sidebar elements not found');
-        return;
-      }
-
-      sidebar.classList.toggle('collapsed');
-      sidebar.classList.toggle('open');
-      icon.textContent = sidebar.classList.contains('collapsed') ||
-                         sidebar.classList.contains('open') ? '☰' : '✕';
-
-      console.log('[App] Sidebar toggled');
-    };
-
-    // Expose handleExport for export menu items (index.html lines 1003, 1010, 1017)
-    window.handleExport = function(format) {
-      console.log('[App] Export triggered:', format);
-
-      // Close the export menu
-      const exportMenu = document.getElementById('exportMenu');
-      if (exportMenu) {
-        exportMenu.classList.remove('active');
-      }
-
-      // Delegate to existing handleExport method
-      app.handleExport(format);
-    };
+    // CSP-compliant: All event handlers now use addEventListener
+    // No global window.* functions needed for onclick handlers
   } catch (error) {
     console.error('[App] Critical error during initialization:', error);
     showInitializationError(error);

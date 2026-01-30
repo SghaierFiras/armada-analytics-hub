@@ -146,6 +146,9 @@ async function startServer() {
     app.use('/assets', express.static(path.join(__dirname, 'assets')));
     app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
 
+    // Serve favicon
+    app.use('/favicon.ico', express.static(path.join(__dirname, 'public', 'favicon.ico')));
+
     logger.info('Static file serving configured (before authentication)');
 
     // Express-session with in-memory store (native Passport support)
